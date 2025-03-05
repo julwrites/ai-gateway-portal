@@ -1,11 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import TeamList from './components/TeamList';
-import TeamForm from './components/TeamForm';
+import { TeamList } from './components/TeamList';
+import { TeamForm } from './components/TeamForm';
+import { Team, TeamFormData } from '@/types/teams';
 
 export default function TeamsPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [teams, setTeams] = useState<Team[]>([]);
+
+  const handleCreateTeam = async (data: TeamFormData) => {
+    // TODO: Implement team creation
+    console.log('Creating team:', data);
+    setShowCreateForm(false);
+  };
+
+  const handleEditTeam = (team: Team) => {
+    // TODO: Implement team editing
+    console.log('Editing team:', team);
+  };
+
+  const handleDeleteTeam = (teamId: string) => {
+    // TODO: Implement team deletion
+    console.log('Deleting team:', teamId);
+  };
 
   return (
     <div className="container mx-auto p-4">
@@ -19,16 +37,16 @@ export default function TeamsPage() {
         </button>
       </div>
       
-      <TeamList />
+      <TeamList 
+        teams={teams} 
+        onEdit={handleEditTeam} 
+        onDelete={handleDeleteTeam} 
+      />
       
       {showCreateForm && (
         <TeamForm 
           onClose={() => setShowCreateForm(false)}
-          onSubmit={async (data) => {
-            // TODO: Implement team creation
-            console.log('Creating team:', data);
-            setShowCreateForm(false);
-          }}
+          onSubmit={handleCreateTeam}
         />
       )}
     </div>

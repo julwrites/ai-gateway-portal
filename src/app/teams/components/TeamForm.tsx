@@ -1,39 +1,26 @@
 'use client';
 
 import { useState } from 'react';
+import { TeamFormData, TeamFormProps, Member } from '@/types/teams';
 
-interface TeamFormProps {
-  onSubmit: (data: TeamFormData) => void;
-  initialData?: TeamFormData;
-  isEdit?: boolean;
-}
-
-export interface TeamFormData {
-  team_alias?: string;
-  models?: string[];
-  max_budget?: number;
-  budget_duration?: string;
-  members_with_roles?: Array<{
-    role: 'admin' | 'user';
-    user_id: string;
-  }>;
-}
-
-export default function TeamForm({ onSubmit, initialData, isEdit = false }: TeamFormProps) {
+export function TeamForm({ onSubmit, onClose, initialData, isEdit = false }: TeamFormProps) {
   const [formData, setFormData] = useState<TeamFormData>(initialData || {
     team_alias: '',
     models: [],
     max_budget: undefined,
     budget_duration: '',
+    metadata: {},
+    tpm_limit: undefined,
+    rpm_limit: undefined,
     members_with_roles: []
   });
 
-  const [newMember, setNewMember] = useState<{ user_id: string; role: 'admin' | 'user' }>({ user_id: '', role: 'user' });
+  const [newMember, setNewMember] = useState<Member>({ user_id: '', role: 'user' });
   const [newModel, setNewModel] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    await onSubmit(formData);
   };
 
   const addMember = () => {
@@ -196,7 +183,14 @@ export default function TeamForm({ onSubmit, initialData, isEdit = false }: Team
         </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end space-x-2">
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+        >
+          Cancel
+        </button>
         <button
           type="submit"
           className="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"

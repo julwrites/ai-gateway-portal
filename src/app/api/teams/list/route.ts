@@ -1,26 +1,27 @@
 import { NextResponse } from 'next/server';
-import { headers } from 'next/headers';
 import { Team } from '@/types/teams';
+import { getApiUrl, getHeaders } from '@/lib/config';
 
 export async function GET(request: Request) {
   try {
-    const headersList = headers();
-    const authHeader = headersList.get('authorization');
-
     // Get query parameters
     const url = new URL(request.url);
     const user_id = url.searchParams.get('user_id');
     const organization_id = url.searchParams.get('organization_id');
 
-    const response = await fetch('http://localhost:4000/team/list' + 
-      (user_id ? `?user_id=${user_id}` : '') +
-      (organization_id ? `${user_id ? '&' : '?'}organization_id=${organization_id}` : ''), {
-      method: 'GET',
-      headers: {
-        'Authorization': authHeader || `Bearer ${process.env.LITELLM_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    // Build query string
+    const queryParams = new URLSearchParams();
+    if (user_id) queryParams.append('user_id', user_id);
+    if (organization_id) queryParams.append('organization_id', organization_id);
+    const queryString = queryParams.toString();
+
+    const response = await fetch(
+      getApiUrl(`/team/list${queryString ? `?${queryString}` : ''}`),
+      {
+        method: 'GET',
+        headers: getHeaders(),
+      }
+    );
 
     if (!response.ok) {
       const errorData = await response.json();

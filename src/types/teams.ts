@@ -29,9 +29,11 @@ export interface TeamFormData {
   metadata?: Record<string, any>;
   tpm_limit?: number;
   rpm_limit?: number;
+  members_with_roles?: Member[];
 }
 
 export interface TeamListProps {
+  teams: Team[];
   onEdit: (team: Team) => void;
   onDelete: (teamId: string) => void;
 }
@@ -39,5 +41,6 @@ export interface TeamListProps {
 export interface TeamFormProps {
   initialData?: TeamFormData;
   onSubmit: (data: TeamFormData) => Promise<void>;
-  onCancel: () => void;
+  onClose: () => void;
+  isEdit?: boolean;
 }
