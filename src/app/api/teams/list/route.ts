@@ -1,39 +1,52 @@
 import { NextResponse } from 'next/server';
 import { Team } from '@/types/teams';
-import { getApiUrl, getHeaders } from '@/lib/config';
+import { getHeaders, getApiUrl } from '@/lib/config';
+
+export const revalidate = 60; // Adjust as needed
 
 export async function GET(request: Request) {
+  console.log('\n=== Fetching Teams ===');
+  
   try {
-    // Get query parameters
-    const url = new URL(request.url);
-    const user_id = url.searchParams.get('user_id');
-    const organization_id = url.searchParams.get('organization_id');
-
-    // Build query string
-    const queryParams = new URLSearchParams();
-    if (user_id) queryParams.append('user_id', user_id);
-    if (organization_id) queryParams.append('organization_id', organization_id);
-    const queryString = queryParams.toString();
-
-    const response = await fetch(
-      getApiUrl(`/team/list${queryString ? `?${queryString}` : ''}`),
-      {
-        method: 'GET',
-        headers: getHeaders(),
-      }
-    );
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.detail || 'Failed to fetch teams');
+    const headers = getHeaders();
+    if (!headers.Authorization) {
+      throw new Error('API key not configured');
     }
 
-    const data = await response.json();
-    return NextResponse.json(data);
+    const url = getApiUrl('/team/list');
+
+    console.log('Request Details:');
+    console.log('URL:', url);
+    console.log('Headers:', {
+      ...headers,
+      Authorization: 'Bearer [REDACTED]'
+    });
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: headers,
+    });
+
+    console.log('\nResponse Details:');
+    console.log('Status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error Response:', errorText);
+      throw new Error(`Failed to fetch teams: ${response.statusText}`);
+    }
+
+    const teams: Team[] = await response.json();
+    console.log('\nTeams Fetched:', teams.length);
+
+    return NextResponse.json(teams);
   } catch (error) {
-    console.error('Error fetching teams:', error);
+    console.error('\nError in teams API route:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to fetch teams' },
+      { 
+        error: 'Failed to fetch teams',
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     );
   }

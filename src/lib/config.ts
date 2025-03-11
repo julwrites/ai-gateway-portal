@@ -8,13 +8,25 @@ export const config: Config = {
   apiKey: process.env.LITELLM_API_KEY || '',
 };
 
+// Log configuration on load (excluding sensitive data)
+console.log('API Base URL:', config.apiBaseUrl);
+console.log('API Key configured:', !!config.apiKey);
+
 export function getHeaders() {
+  if (!config.apiKey) {
+    console.warn('No API key configured');
+  }
+  
   return {
     'Authorization': `Bearer ${config.apiKey}`,
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   };
 }
 
 export function getApiUrl(path: string) {
-  return `${config.apiBaseUrl}${path}`;
+  // Ensure path starts with /
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const url = `${config.apiBaseUrl}${normalizedPath}`;
+  return url;
 }

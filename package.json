@@ -15,6 +15,7 @@
     "@radix-ui/react-slot": "^1.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dotenv": "^16.4.7",
     "lucide-react": "^0.477.0",
     "next": "^14.1.0",
     "react": "^18.2.0",
@@ -22,6 +23,7 @@
     "tailwind-merge": "^3.0.2"
   },
   "devDependencies": {
+    "@tailwindcss/forms": "^0.5.10",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

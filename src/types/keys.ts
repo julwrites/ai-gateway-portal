@@ -1,25 +1,19 @@
 export interface APIKey {
+  id: string;
   key: string;
-  key_name?: string;
   key_alias?: string;
   spend: number;
   max_budget?: number;
   expires?: string;
-  models: any[];
+  models: string[];
   aliases: Record<string, any>;
-  config: Record<string, any>;
   user_id?: string;
   team_id?: string;
+  permissions: Record<string, any>;
   max_parallel_requests?: number;
-  metadata: Record<string, any>;
   tpm_limit?: number;
   rpm_limit?: number;
   budget_duration?: string;
-  budget_reset_at?: string;
-  permissions: Record<string, any>;
-  model_spend: Record<string, any>;
-  model_max_budget: Record<string, any>;
-  blocked?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -47,3 +41,9 @@ export interface APIKeyResponse {
   current_page?: number;
   total_pages?: number;
 }
+
+export interface KeyFormProps {
+  onSubmit: (data: APIKeyFormData) => Promise<void>;
+  onClose: () => void;
+  initialData?: APIKeyFormData;
+  isEdit?: boolean;

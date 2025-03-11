@@ -36,3 +36,10 @@ export interface UserResponse {
   current_page?: number;
   total_pages?: number;
 }
+
+export interface UserFormProps {
+  onSubmit: (data: UserFormData) => Promise<void>;
+  onClose: () => void;
+  initialData?: UserFormData;
+  isEdit?: boolean;
+}

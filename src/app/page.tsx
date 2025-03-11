@@ -48,6 +48,20 @@ export default function Home() {
               </div>
             </div>
           </div>
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <h2 className="text-lg font-medium text-gray-900">Models</h2>
+              <p className="mt-1 text-sm text-gray-500">Manage LLM models and providers</p>
+              <div className="mt-4">
+                <a 
+                  href="/models" 
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700"
+                >
+                  View Models
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

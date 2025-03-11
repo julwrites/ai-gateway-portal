@@ -13,11 +13,14 @@ RUN npm install
 # Copy source code
 COPY . .
 
+# Install development dependencies for PostCSS
+RUN npm install -D postcss postcss-loader tailwindcss autoprefixer
+
 # Build the application
 RUN npm run build
 
 # Expose port
 EXPOSE 3000
 
-# Start the application
-CMD ["npm", "start"]
+# Start the application in development mode
+CMD ["npm", "run", "dev"]

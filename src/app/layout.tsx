@@ -37,6 +37,9 @@ export default function RootLayout({
                     <a href="/keys" className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900">
                       Keys
                     </a>
+                    <a href="/models" className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900">
+                      Models
+                    </a>
                   </div>
                 </div>
               </div>
