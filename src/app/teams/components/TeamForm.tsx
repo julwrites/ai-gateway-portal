@@ -1,29 +1,82 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TeamFormData, TeamFormProps, Member } from '@/types/teams';
 
 export function TeamForm({ onSubmit, onClose, initialData, isEdit = false }: TeamFormProps) {
-  const [formData, setFormData] = useState<TeamFormData>(initialData || {
-    team_alias: '',
-    models: [],
-    max_budget: undefined,
-    budget_duration: '',
-    metadata: {},
-    tpm_limit: undefined,
-    rpm_limit: undefined,
-    members_with_roles: [],
-    organization_id: undefined,
-    blocked: false,
-    max_parallel_requests: undefined,
-    tags: [],
-    model_aliases: {},
-    guardrails: {}
+  const [formData, setFormData] = useState<TeamFormData>({
+    team_alias: initialData?.team_alias || '',
+    models: initialData?.models || [],
+    max_budget: initialData?.max_budget,
+    budget_duration: initialData?.budget_duration || '',
+    metadata: initialData?.metadata || {},
+    tpm_limit: initialData?.tpm_limit,
+    rpm_limit: initialData?.rpm_limit,
+    members_with_roles: initialData?.members_with_roles || [],
+    organization_id: initialData?.organization_id,
+    blocked: initialData?.blocked || false,
+    max_parallel_requests: initialData?.max_parallel_requests,
+    tags: initialData?.tags || [],
+    model_aliases: initialData?.model_aliases || {},
+    guardrails: initialData?.guardrails || {}
   });
 
   const [newMember, setNewMember] = useState<Member>({ user_id: '', role: 'user' });
   const [newModel, setNewModel] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+  const [users, setUsers] = useState<{ user_id: string; user_email: string }[]>([]);
+  const [availableModels, setAvailableModels] = useState<{ model_id: string; display_name: string }[]>([]);
+
+  useEffect(() => {
+    fetchUsers();
+    fetchModels();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/users/list');
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      const data = await response.json();
+      setUsers(data.users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  const fetchModels = async () => {
+    try {
+      const response = await fetch('/api/models/list');
+      if (!response.ok) {
+        throw new Error('Failed to fetch models');
+      }
+      const data = await response.json();
+      setAvailableModels(data.data);
+    } catch (error) {
+      console.error('Error fetching models:', error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validateForm()) {
+      return;
+    }
+    try {
+      // Ensure all list fields are arrays, even if empty
+      const submissionData = {
+        ...formData,
+        models: formData.models || [],
+        members_with_roles: formData.members_with_roles || [],
+        tags: formData.tags || [],
+      };
+      await onSubmit(submissionData);
+      setFormError(null);
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'An error occurred while submitting the form');
+    }
+  };
 
   const validateForm = () => {
     if (!formData.team_alias) {
@@ -32,20 +85,6 @@ export function TeamForm({ onSubmit, onClose, initialData, isEdit = false }: Tea
     }
     // Add more validation as needed
     return true;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-    try {
-      await onSubmit(formData);
-      setFormError(null);
-    } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'An error occurred while submitting the form');
-    }
   };
 
   const addMember = () => {
@@ -64,7 +103,7 @@ export function TeamForm({ onSubmit, onClose, initialData, isEdit = false }: Tea
   const removeMember = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      members_with_roles: prev.members_with_roles?.filter((_, i) => i !== index)
+      members_with_roles: prev.members_with_roles?.filter((_, i) => i !== index) || []
     }));
   };
 
@@ -81,7 +120,7 @@ export function TeamForm({ onSubmit, onClose, initialData, isEdit = false }: Tea
   const removeModel = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      models: prev.models?.filter((_, i) => i !== index)
+      models: prev.models?.filter((_, i) => i !== index) || []
     }));
   };
 
@@ -132,6 +171,7 @@ export function TeamForm({ onSubmit, onClose, initialData, isEdit = false }: Tea
         </select>
       </div>
 
+
       <div>
         <label className="block text-sm font-medium text-gray-700">Members</label>
         <div className="mt-2 space-y-2">
@@ -148,13 +188,16 @@ export function TeamForm({ onSubmit, onClose, initialData, isEdit = false }: Tea
             </div>
           ))}
           <div className="flex space-x-2">
-            <input
-              type="text"
+            <select
               value={newMember.user_id}
               onChange={(e) => setNewMember({ ...newMember, user_id: e.target.value })}
-              placeholder="User ID"
               className="flex-grow rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            />
+            >
+              <option value="">Select User</option>
+              {users.map((user) => (
+                <option key={user.user_id} value={user.user_id}>{user.user_email}</option>
+              ))}
+            </select>
             <select
               value={newMember.role}
               onChange={(e) => setNewMember({ ...newMember, role: e.target.value as 'admin' | 'user' })}
@@ -190,13 +233,16 @@ export function TeamForm({ onSubmit, onClose, initialData, isEdit = false }: Tea
             </div>
           ))}
           <div className="flex space-x-2">
-            <input
-              type="text"
+            <select
               value={newModel}
               onChange={(e) => setNewModel(e.target.value)}
-              placeholder="Model name"
               className="flex-grow rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            />
+            >
+              <option value="">Select Model</option>
+              {availableModels.map((model) => (
+                <option key={model.model_id} value={model.model_id}>{model.display_name}</option>
+              ))}
+            </select>
             <button
               type="button"
               onClick={addModel}
