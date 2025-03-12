@@ -1,5 +1,3 @@
-"use client";
-
 import { Model } from "@/types/models";
 import {
   Table,
@@ -9,18 +7,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Power } from "lucide-react";
 
 interface ModelListProps {
   models: Model[];
-  onEdit: (model: Model) => void;
-  onDelete: (modelId: string) => void;
-  onToggleActive: (modelId: string, isActive: boolean) => void;
 }
 
-export function ModelList({ models, onEdit, onDelete, onToggleActive }: ModelListProps) {
+export function ModelList({ models }: ModelListProps) {
   return (
     <div className="rounded-md border">
       <Table>
@@ -32,7 +25,6 @@ export function ModelList({ models, onEdit, onDelete, onToggleActive }: ModelLis
             <TableHead>Status</TableHead>
             <TableHead>Token Limits</TableHead>
             <TableHead>Pricing</TableHead>
-            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -78,31 +70,6 @@ export function ModelList({ models, onEdit, onDelete, onToggleActive }: ModelLis
                   {!model.input_cost_per_token && !model.output_cost_per_token && !model.cost_per_token && (
                     <span className="text-gray-500">No pricing set</span>
                   )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onToggleActive(model.model_id, !model.is_active)}
-                  >
-                    <Power className={`h-4 w-4 ${model.is_active ? 'text-green-500' : 'text-gray-500'}`} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onEdit(model)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onDelete(model.model_id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
                 </div>
               </TableCell>
             </TableRow>

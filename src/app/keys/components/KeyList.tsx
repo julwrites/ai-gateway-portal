@@ -44,7 +44,8 @@ export function KeyList({ keys, onEdit, onDelete }: KeyListProps) {
           <TableRow>
             <TableHead>Key Name</TableHead>
             <TableHead>Models</TableHead>
-            <TableHead>Spend / Budget</TableHead>
+            <TableHead>Spend</TableHead>
+            <TableHead>Budget</TableHead>
             <TableHead>Rate Limits</TableHead>
             <TableHead>Created</TableHead>
             <TableHead>Actions</TableHead>
@@ -83,15 +84,21 @@ export function KeyList({ keys, onEdit, onDelete }: KeyListProps) {
                 </div>
               </TableCell>
               <TableCell>
-                <div className="flex flex-col">
-                  <span>${key.spend.toFixed(2)} spent</span>
-                  {key.max_budget && (
-                    <span className="text-sm text-gray-500">
-                      ${key.max_budget} limit
-                      {key.budget_duration && ` / ${key.budget_duration}`}
-                    </span>
-                  )}
-                </div>
+                <span>${key.spend.toFixed(2)} spent</span>
+              </TableCell>
+              <TableCell>
+                {key.max_budget ? (
+                  <div className="flex flex-col">
+                    <span>${key.max_budget} limit</span>
+                    {key.budget_duration && (
+                      <span className="text-sm text-gray-500">
+                        per {key.budget_duration}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-gray-500">No budget set</span>
+                )}
               </TableCell>
               <TableCell>
                 <div className="flex flex-col text-sm">
