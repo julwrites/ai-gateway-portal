@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { APIKey, APIKeyFormData, APIKeyResponse } from '@/types/keys';
+import { APIKey, APIKeyFormData } from '@/types/keys';
 import { KeyList } from './components/KeyList';
 import { KeyForm } from './components/KeyForm';
 
@@ -11,42 +11,25 @@ export default function KeysPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-
   useEffect(() => {
-    const fetchKeys = async () => {
-      try {
-        const response = await fetch('/api/keys/list');
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch API keys');
-        }
-        
-        const responseText = await response.text();
-        console.log("Raw response from /api/keys/list:", responseText);
-        
-        const data: APIKeyResponse = JSON.parse(responseText);
-        console.log("Parsed data from /api/keys/list:", data);
-        
-        if (Array.isArray(data.keys)) {
-          console.log("Keys array:", data.keys);
-          setKeys(data.keys);
-        } else {
-          console.error("Received keys is not an array:", data.keys);
-          setKeys([]);
-        }
-        setError(null);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch API keys';
-        console.error('Error in fetchKeys:', errorMessage);
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    };
-  
     fetchKeys();
   }, []);
+
+  const fetchKeys = async () => {
+    try {
+      const response = await fetch('/api/keys/list');
+      if (!response.ok) {
+        throw new Error('Failed to fetch API keys');
+      }
+      const data = await response.json();
+      setKeys(data.keys);
+      setError(null);
+    } catch (err) {
+      setError('Failed to fetch API keys');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCreateKey = async (data: APIKeyFormData) => {
     try {
@@ -57,47 +40,39 @@ export default function KeysPage() {
         },
         body: JSON.stringify(data),
       });
-  
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create API key');
+        throw new Error('Failed to create API key');
       }
-  
-      const newKey: APIKey = await response.json();
-      setKeys(prevKeys => [...prevKeys, newKey]);
+
+      // Instead of updating the local state, refresh the entire user list
+      await fetchKeys();
       setShowCreateForm(false);
       setError(null);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create API key';
-      console.error('Error in handleCreateKey:', errorMessage);
-      setError(errorMessage);
+      setError('Failed to create API key');
     }
   };
-  
-  const handleEditKey = async (key: APIKey) => {
+
+  const handleEditKey = async (updatedKey: APIKey) => {
     try {
       const response = await fetch('/api/keys/update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(key),
+        body: JSON.stringify(updatedKey),
       });
-  
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update API key');
+        throw new Error('Failed to update API key');
       }
-  
-      const updatedKey: APIKey = await response.json();
-      setKeys(prevKeys => 
-        prevKeys.map(k => k.key === updatedKey.key ? updatedKey : k)
-      );
+
+      // Instead of updating the local state, refresh the entire user list
+      await fetchKeys();
       setError(null);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update API key';
-      console.error('Error in handleEditKey:', errorMessage);
-      setError(errorMessage);
+      setError('Failed to update API key');
     }
   };
 
@@ -112,18 +87,23 @@ export default function KeysPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete API key');
+        throw new Error('Failed to delete API key');
       }
 
-      setKeys(prevKeys => prevKeys.filter(key => key.key !== keyId));
+      setKeys(prevKeys => prevKeys.filter(key => key.id !== keyId));
       setError(null);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete API key';
-      console.error('Error in handleDeleteKey:', errorMessage);
-      setError(errorMessage);
+      setError('Failed to delete API key');
     }
   };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   return (
     <div className="container mx-auto p-4">
@@ -137,17 +117,11 @@ export default function KeysPage() {
         </button>
       </div>
       
-      {loading ? (
-        <div className="text-center py-4">Loading API keys...</div>
-      ) : error ? (
-        <div className="text-red-500 text-center py-4">{error}</div>
-      ) : (
-        <KeyList 
-          keys={keys} 
-          onEdit={handleEditKey} 
-          onDelete={handleDeleteKey} 
-        />
-      )}
+      <KeyList 
+        keys={keys} 
+        onEdit={handleEditKey} 
+        onDelete={handleDeleteKey} 
+      />
       
       {showCreateForm && (
         <KeyForm 

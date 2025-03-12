@@ -1,17 +1,12 @@
-"use client";
+'use client';
 
+import { useState } from 'react';
 import { APIKey } from "@/types/keys";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2, Copy } from "lucide-react";
+import { KeyForm } from './KeyForm';
 
 interface KeyListProps {
   keys: APIKey[];
@@ -20,11 +15,22 @@ interface KeyListProps {
 }
 
 export function KeyList({ keys, onEdit, onDelete }: KeyListProps) {
-  console.log("Keys received in KeyList:", keys);
+  const [editingKey, setEditingKey] = useState<APIKey | null>(null);
 
   const handleCopyKey = (key: string) => {
     navigator.clipboard.writeText(key);
     // TODO: Add toast notification
+  };
+
+  const handleEditClick = (key: APIKey) => {
+    setEditingKey(key);
+  };
+
+  const handleEditSubmit = async (updatedData: Partial<APIKey>) => {
+    if (editingKey) {
+      await onEdit({ ...editingKey, ...updatedData });
+      setEditingKey(null);
+    }
   };
 
   if (!keys || keys.length === 0) {
@@ -56,7 +62,7 @@ export function KeyList({ keys, onEdit, onDelete }: KeyListProps) {
                       variant="ghost"
                       size="icon"
                       className="h-4 w-4"
-                      onClick={() => handleCopyKey(key.id)}
+                      onClick={() => handleCopyKey(key.key)}
                     >
                       <Copy className="h-3 w-3" />
                     </Button>
@@ -108,7 +114,7 @@ export function KeyList({ keys, onEdit, onDelete }: KeyListProps) {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => onEdit(key)}
+                    onClick={() => handleEditClick(key)}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -125,6 +131,14 @@ export function KeyList({ keys, onEdit, onDelete }: KeyListProps) {
           ))}
         </TableBody>
       </Table>
+      {editingKey && (
+        <KeyForm
+          onSubmit={handleEditSubmit}
+          onClose={() => setEditingKey(null)}
+          initialData={editingKey}
+          isEdit={true}
+        />
+      )}
     </div>
   );
 }

@@ -22,6 +22,7 @@ export interface APIKeyFormData {
   key_alias?: string;
   duration?: string;
   models?: string[];
+  spend?: number;
   max_budget?: number;
   user_id?: string;
   team_id?: string;
@@ -30,9 +31,22 @@ export interface APIKeyFormData {
   tpm_limit?: number;
   rpm_limit?: number;
   budget_duration?: string;
+  allowed_cache_controls?: string[];
   permissions?: Record<string, any>;
   model_max_budget?: Record<string, any>;
+  model_rpm_limit?: Record<string, number>;
+  model_tpm_limit?: Record<string, number>;
   blocked?: boolean;
+  aliases?: Record<string, string>;
+  tags?: string[];
+  soft_budget?: number;
+}
+
+export interface KeyFormProps {
+  onSubmit: (data: APIKeyFormData) => Promise<void>;
+  onClose: () => void;
+  initialData?: APIKeyFormData;
+  isEdit?: boolean;
 }
 
 export interface APIKeyResponse {
@@ -41,9 +55,3 @@ export interface APIKeyResponse {
   current_page?: number;
   total_pages?: number;
 }
-
-export interface KeyFormProps {
-  onSubmit: (data: APIKeyFormData) => Promise<void>;
-  onClose: () => void;
-  initialData?: APIKeyFormData;
-  isEdit?: boolean;
