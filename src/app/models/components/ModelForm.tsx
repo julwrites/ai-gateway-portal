@@ -1,6 +1,4 @@
-'use client';
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ModelFormData, ModelFormProps, ModelProvider } from '@/types/models';
 
 export function ModelForm({ onSubmit, onClose, initialData, isEdit = false }: ModelFormProps) {
@@ -15,13 +13,31 @@ export function ModelForm({ onSubmit, onClose, initialData, isEdit = false }: Mo
     input_cost_per_token: undefined,
     output_cost_per_token: undefined,
     api_base: '',
-    api_key: ''
+    api_key: '',
+    models: [],
   });
+
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (formData.provider) {
+      // Fetch available models for the selected provider
+      fetchAvailableModels(formData.provider);
+    }
+  }, [formData.provider]);
+
+  const fetchAvailableModels = async (provider: ModelProvider) => {
+    // This is a placeholder. You'll need to implement an API endpoint to fetch models for a provider
+    const response = await fetch(`/api/models/available?provider=${provider}`);
+    const data = await response.json();
+    setAvailableModels(data.models);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await onSubmit(formData);
   };
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -59,6 +75,25 @@ export function ModelForm({ onSubmit, onClose, initialData, isEdit = false }: Mo
         </select>
       </div>
 
+      {formData.provider && (
+        <div>
+          <label htmlFor="models" className="block text-sm font-medium text-gray-700">
+            Models
+          </label>
+          <select
+            id="models"
+            multiple
+            value={formData.models}
+            onChange={(e) => setFormData({ ...formData, models: Array.from(e.target.selectedOptions, option => option.value) })}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          >
+            {availableModels.map((model) => (
+              <option key={model} value={model}>{model}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div>
         <label htmlFor="display_name" className="block text-sm font-medium text-gray-700">
           Display Name
@@ -69,7 +104,7 @@ export function ModelForm({ onSubmit, onClose, initialData, isEdit = false }: Mo
           value={formData.display_name || ''}
           onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
           className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          placeholder="GPT-4"
+          placeholder="Display Name"
         />
       </div>
 

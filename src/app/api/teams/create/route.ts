@@ -17,9 +17,6 @@ interface TeamCreateRequest {
   budget_duration?: string;
   models?: string[];
   blocked?: boolean;
-  model_aliases?: Record<string, string>;
-  tags?: string[];
-  guardrails?: string[];
 }
 
 interface APIErrorResponse {
@@ -40,6 +37,12 @@ export async function POST(request: Request) {
 
     const teamData: TeamCreateRequest = await request.json();
     
+    // Ensure arrays are properly handled
+    teamData.models = teamData.models || [];
+    teamData.admins = teamData.admins || [];
+    teamData.members = teamData.members || [];
+    teamData.members_with_roles = teamData.members_with_roles || [];
+
     if (teamData.budget_duration && !isValidDuration(teamData.budget_duration)) {
       return NextResponse.json(
         { 
@@ -55,6 +58,7 @@ export async function POST(request: Request) {
     }
 
     const url = getApiUrl('/team/new');
+
 
     // Add handling for litellm-changed-by header
     const litellmChangedBy = request.headers.get('litellm-changed-by');

@@ -28,7 +28,9 @@ export interface ModelFormData {
   output_cost_per_token?: number;
   api_base?: string;
   api_key?: string;
+  models: string[];
 }
+
 
 export interface ModelResponse {
   models: Model[];

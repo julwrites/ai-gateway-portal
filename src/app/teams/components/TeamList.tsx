@@ -29,6 +29,7 @@ export function TeamList({ teams, onEdit, onDelete }: TeamListProps) {
             <TableHead>Members</TableHead>
             <TableHead>Models</TableHead>
             <TableHead>Budget</TableHead>
+            <TableHead>Spend</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -82,6 +83,13 @@ export function TeamList({ teams, onEdit, onDelete }: TeamListProps) {
                   </div>
                 ) : (
                   <span className="text-gray-500">No budget set</span>
+                )}
+              </TableCell>
+              <TableCell>
+                {team.spend !== undefined ? (
+                  <div>${team.spend.toFixed(2)}</div>
+                ) : (
+                  <span className="text-gray-500">N/A</span>
                 )}
               </TableCell>
               <TableCell>

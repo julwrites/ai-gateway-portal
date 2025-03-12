@@ -14,30 +14,30 @@ export default function ModelsPage() {
   const [editModel, setEditModel] = useState<Model | null>(null);
 
   useEffect(() => {
-    const fetchModels = async () => {
-      try {
-        const response = await fetch('/api/models/list');
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch models');
-        }
-        
-        const { data } = await response.json();
-        
-        setModels(Array.isArray(data) ? data : []);
-        setError(null);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch models';
-        console.error('Error in fetchModels:', errorMessage);
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchModels();
   }, []);
+
+  const fetchModels = async () => {
+    try {
+      const response = await fetch('/api/models/list');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch models');
+      }
+      
+      const { data } = await response.json();
+      
+      setModels(Array.isArray(data) ? data : []);
+      setError(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch models';
+      console.error('Error in fetchModels:', errorMessage);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCreateModel = async (data: ModelFormData) => {
     try {
@@ -54,8 +54,7 @@ export default function ModelsPage() {
         throw new Error(errorData.error || 'Failed to create model');
       }
 
-      const { data: newModel } = await response.json();
-      setModels(prevModels => [...prevModels, newModel]);
+      await fetchModels();
       setShowCreateForm(false);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create model';
@@ -84,12 +83,7 @@ export default function ModelsPage() {
         throw new Error(errorData.error || 'Failed to update model');
       }
 
-      const { data: updatedModel } = await response.json();
-      setModels(prevModels => 
-        prevModels.map(model => 
-          model.model_id === updatedModel.model_id ? updatedModel : model
-        )
-      );
+      await fetchModels();
       setShowCreateForm(false);
       setEditModel(null);
     } catch (err) {
@@ -108,13 +102,13 @@ export default function ModelsPage() {
         },
         body: JSON.stringify({ model_id: modelId }),
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to delete model');
       }
-
-      setModels(prevModels => prevModels.filter(model => model.model_id !== modelId));
+  
+      await fetchModels(); // Refresh the list after deletion
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete model';
       console.error('Error in handleDeleteModel:', errorMessage);

@@ -6,20 +6,16 @@ import { validateTeamData } from '@/lib/validators';
 
 export function TeamForm({ onSubmit, onClose, initialData, isEdit = false }: TeamFormProps) {
   const [formData, setFormData] = useState<TeamFormData>({
-    team_alias: initialData?.team_alias || '',
-    models: initialData?.models || [],
+    team_alias: initialData?.team_alias,
+    models: initialData?.models,
     max_budget: initialData?.max_budget,
-    budget_duration: initialData?.budget_duration || '',
-    metadata: initialData?.metadata || {},
+    budget_duration: initialData?.budget_duration,
+    metadata: initialData?.metadata,
     tpm_limit: initialData?.tpm_limit,
     rpm_limit: initialData?.rpm_limit,
-    members_with_roles: initialData?.members_with_roles || [],
-    organization_id: initialData?.organization_id,
-    blocked: initialData?.blocked || false,
+    members_with_roles: initialData?.members_with_roles,
+    blocked: initialData?.blocked,
     max_parallel_requests: initialData?.max_parallel_requests,
-    tags: initialData?.tags || [],
-    model_aliases: initialData?.model_aliases || {},
-    guardrails: initialData?.guardrails || {}
   });
 
   const [newMember, setNewMember] = useState<Member>({ user_id: '', role: 'user' });
@@ -67,16 +63,22 @@ export function TeamForm({ onSubmit, onClose, initialData, isEdit = false }: Tea
       return;
     }
     try {
-      // Ensure all list fields are arrays, even if empty
+      // Ensure all required fields are included and properly formatted
       const submissionData = {
         ...formData,
-        models: formData.models || [],
-        members_with_roles: formData.members_with_roles || [],
-        tags: formData.tags || [],
+        team_alias: formData.team_alias || undefined,
+        max_budget: formData.max_budget || undefined,
+        budget_duration: formData.budget_duration || undefined,
+        models: formData.models?.length ? formData.models : undefined,
+        members_with_roles: formData.members_with_roles?.length ? formData.members_with_roles : undefined,
+        tpm_limit: formData.tpm_limit || undefined,
+        rpm_limit: formData.rpm_limit || undefined,
       };
+      console.log('Submitting team data:', submissionData);  // Log the data being submitted
       await onSubmit(submissionData);
       setFormError(null);
     } catch (error) {
+      console.error('Error submitting form:', error);
       setFormError(error instanceof Error ? error.message : 'An error occurred while submitting the form');
     }
   };

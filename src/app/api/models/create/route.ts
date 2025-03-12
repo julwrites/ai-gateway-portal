@@ -1,3 +1,5 @@
+// src/app/api/models/create/route.ts
+
 import { NextResponse } from 'next/server';
 import { Model } from '@/types/models';
 import { getHeaders, getApiUrl } from '@/lib/config';
@@ -15,35 +17,35 @@ export async function POST(request: Request) {
     // Get request body and transform to LiteLLM format
     const modelData = await request.json();
     
-    // Transform frontend model data to match OpenAPI schema for model creation
-    const litellmBody = {
-      model_name: modelData.model_name,
+    // Create an array of LiteLLM bodies, one for each model
+    const litellmBodies = modelData.models.map(model => ({
+      model_name: model,
       litellm_params: {
-        custom_llm_provider: modelData.litellm_params?.custom_llm_provider,
-        model: modelData.litellm_params?.model,
-        api_base: modelData.litellm_params?.api_base,
-        api_key: modelData.litellm_params?.api_key,
-        api_version: modelData.litellm_params?.api_version,
-        timeout: modelData.litellm_params?.timeout ? Number(modelData.litellm_params.timeout) : undefined,
-        stream_timeout: modelData.litellm_params?.stream_timeout ? Number(modelData.litellm_params.stream_timeout) : undefined,
-        max_retries: modelData.litellm_params?.max_retries ? Number(modelData.litellm_params.max_retries) : undefined,
-        input_cost_per_token: modelData.litellm_params?.input_cost_per_token ? Number(modelData.litellm_params.input_cost_per_token) : undefined,
-        output_cost_per_token: modelData.litellm_params?.output_cost_per_token ? Number(modelData.litellm_params.output_cost_per_token) : undefined,
-        rpm_limit: modelData.litellm_params?.rpm_limit ? Number(modelData.litellm_params.rpm_limit) : undefined,
-        tpm_limit: modelData.litellm_params?.tpm_limit ? Number(modelData.litellm_params.tpm_limit) : undefined,
-        organization: modelData.litellm_params?.organization,
-        use_in_pass_through: modelData.litellm_params?.use_in_pass_through,
-        merge_reasoning_content_in_choices: modelData.litellm_params?.merge_reasoning_content_in_choices
+        custom_llm_provider: modelData.provider,
+        model: model,
+        api_base: modelData.api_base,
+        api_key: modelData.api_key,
+        api_version: modelData.api_version,
+        timeout: modelData.timeout ? Number(modelData.timeout) : undefined,
+        stream_timeout: modelData.stream_timeout ? Number(modelData.stream_timeout) : undefined,
+        max_retries: modelData.max_retries ? Number(modelData.max_retries) : undefined,
+        input_cost_per_token: modelData.input_cost_per_token ? Number(modelData.input_cost_per_token) : undefined,
+        output_cost_per_token: modelData.output_cost_per_token ? Number(modelData.output_cost_per_token) : undefined,
+        rpm_limit: modelData.rpm_limit ? Number(modelData.rpm_limit) : undefined,
+        tpm_limit: modelData.tpm_limit ? Number(modelData.tpm_limit) : undefined,
+        organization: modelData.organization,
+        use_in_pass_through: modelData.use_in_pass_through,
+        merge_reasoning_content_in_choices: modelData.merge_reasoning_content_in_choices
       },
       model_info: {
-        id: modelData.model_info?.id,
-        db_model: modelData.model_info?.db_model || false,
-        base_model: modelData.model_info?.base_model,
-        tier: modelData.model_info?.tier,
-        team_id: modelData.model_info?.team_id,
-        team_public_model_name: modelData.model_info?.team_public_model_name
+        id: model,
+        db_model: false,
+        base_model: modelData.base_model,
+        tier: modelData.tier,
+        team_id: modelData.team_id,
+        team_public_model_name: modelData.display_name || model
       }
-    };
+    }));
 
     const url = getApiUrl('/model/new');
 
@@ -54,47 +56,46 @@ export async function POST(request: Request) {
       ...headers,
       Authorization: 'Bearer [REDACTED]'
     });
-    console.log('Body:', litellmBody);
+    console.log('Bodies:', litellmBodies);
 
-    // Make the request
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        ...headers,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(litellmBody),
-    });
+    // Make the requests
+    const responses = await Promise.all(litellmBodies.map(body => 
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      })
+    ));
 
-    // Log response details
-    console.log('\nResponse Details:');
-    console.log('Status:', response.status);
-    console.log('Headers:', response.headers);
+    // Process all responses
+    const results = await Promise.all(responses.map(async (response, index) => {
+      const responseText = await response.text();
+      
+      if (!response.ok) {
+        console.error(`Error Response for ${litellmBodies[index].model_name}:`, responseText);
+        return { model: litellmBodies[index].model_name, error: `Failed to create model: ${responseText}` };
+      }
 
-    const responseText = await response.text();
-    
-    if (!response.ok) {
-      console.error('Error Response:', responseText);
-      throw new Error(`Failed to create model: ${responseText}`);
-    }
+      try {
+        const rawData = JSON.parse(responseText);
+        console.log(`\nParsed Response for ${litellmBodies[index].model_name}:`, JSON.stringify(rawData, null, 2));
+        return { model: litellmBodies[index].model_name, data: rawData };
+      } catch (e) {
+        console.error(`Failed to parse response for ${litellmBodies[index].model_name}:`, e);
+        return { model: litellmBodies[index].model_name, error: 'Invalid JSON response from server' };
+      }
+    }));
 
-    // Parse and validate response
-    let rawData;
-    try {
-      rawData = JSON.parse(responseText);
-      console.log('\nParsed Response:', JSON.stringify(rawData, null, 2));
-    } catch (e) {
-      console.error('Failed to parse response:', e);
-      throw new Error('Invalid JSON response from server');
-    }
-
-    console.log('=== Model Created Successfully ===\n');
-    return NextResponse.json(rawData);
+    console.log('=== Models Created ===\n');
+    return NextResponse.json({ results });
   } catch (error) {
     console.error('\nError in models create API route:', error);
     return NextResponse.json(
       { 
-        error: 'Failed to create model',
+        error: 'Failed to create models',
         details: error instanceof Error ? error.message : String(error)
       },
       { status: 500 }

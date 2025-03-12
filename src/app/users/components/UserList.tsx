@@ -1,5 +1,4 @@
-"use client";
-
+import React from 'react';
 import {
   Table,
   TableBody,
@@ -12,11 +11,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2 } from "lucide-react";
 import { UserResponse } from '@/types/users';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface UserListProps {
   users: UserResponse[];
   onEdit: (user: UserResponse) => void;
   onDelete: (userId: string) => void;
+}
+
+function truncateUserId(userId: string): string {
+  if (userId.length <= 8) return userId;
+  return `${userId.slice(0, 4)}...${userId.slice(-4)}`;
 }
 
 export function UserList({ users, onEdit, onDelete }: UserListProps) {
@@ -30,6 +35,7 @@ export function UserList({ users, onEdit, onDelete }: UserListProps) {
             <TableHead>Role</TableHead>
             <TableHead>Teams</TableHead>
             <TableHead>Models</TableHead>
+            <TableHead>Spend</TableHead>
             <TableHead>Budget</TableHead>
             <TableHead>Rate Limits</TableHead>
             <TableHead>Actions</TableHead>
@@ -39,23 +45,26 @@ export function UserList({ users, onEdit, onDelete }: UserListProps) {
           {users.map((user) => (
             <TableRow key={user.user_id}>
               <TableCell className="font-medium">
-                {user.user_id}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      {truncateUserId(user.user_id)}
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{user.user_id}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </TableCell>
+              <TableCell>{user.user_email || 'N/A'}</TableCell>
               <TableCell>
-                {user.user_email || 'N/A'}
-              </TableCell>
-              <TableCell>
-                <Badge variant="outline">
-                  {user.user_role || 'No Role'}
-                </Badge>
+                <Badge variant="outline">{user.user_role || 'No Role'}</Badge>
               </TableCell>
               <TableCell>
                 <div className="flex flex-wrap gap-2">
                   {user.teams && user.teams.length > 0 ? (
                     user.teams.map((team, idx) => (
-                      <Badge key={idx} variant="secondary">
-                        {team}
-                      </Badge>
+                      <Badge key={idx} variant="secondary">{team}</Badge>
                     ))
                   ) : (
                     <span className="text-gray-500">No teams</span>
@@ -66,9 +75,7 @@ export function UserList({ users, onEdit, onDelete }: UserListProps) {
                 <div className="flex flex-wrap gap-2">
                   {user.models && user.models.length > 0 ? (
                     user.models.map((model, idx) => (
-                      <Badge key={idx} variant="outline">
-                        {model}
-                      </Badge>
+                      <Badge key={idx} variant="outline">{model}</Badge>
                     ))
                   ) : (
                     <span className="text-gray-500">All models</span>
@@ -76,17 +83,25 @@ export function UserList({ users, onEdit, onDelete }: UserListProps) {
                 </div>
               </TableCell>
               <TableCell>
-                <div className="flex flex-col">
-                  {user.spend !== undefined && (
-                    <span>${user.spend.toFixed(2)} spent</span>
-                  )}
-                  {user.max_budget && (
-                    <span className="text-sm text-gray-500">
-                      ${user.max_budget} limit
-                      {user.budget_duration && ` / ${user.budget_duration}`}
-                    </span>
-                  )}
-                </div>
+                {user.spend !== undefined ? (
+                  <span>${user.spend.toFixed(2)}</span>
+                ) : (
+                  <span className="text-gray-500">N/A</span>
+                )}
+              </TableCell>
+              <TableCell>
+                {user.max_budget ? (
+                  <div className="flex flex-col">
+                    <span>${user.max_budget}</span>
+                    {user.budget_duration && (
+                      <span className="text-sm text-gray-500">
+                        per {user.budget_duration}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-gray-500">No limit</span>
+                )}
               </TableCell>
               <TableCell>
                 <div className="flex flex-col text-sm">
@@ -99,18 +114,10 @@ export function UserList({ users, onEdit, onDelete }: UserListProps) {
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onEdit(user)}
-                  >
+                  <Button variant="ghost" size="icon" onClick={() => onEdit(user)}>
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onDelete(user.user_id)}
-                  >
+                  <Button variant="ghost" size="icon" onClick={() => onDelete(user.user_id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>

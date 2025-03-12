@@ -30,12 +30,8 @@ export interface TeamFormData {
   tpm_limit?: number;
   rpm_limit?: number;
   members_with_roles?: Member[];
-  organization_id?: string;
   blocked?: boolean;
   max_parallel_requests?: number;
-  tags?: string[];
-  model_aliases?: Record<string, string>;
-  guardrails?: Record<string, any>;
 }
 
 export interface TeamListProps {
