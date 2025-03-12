@@ -39,18 +39,22 @@ export function TeamList({ teams, onEdit, onDelete }: TeamListProps) {
                 {team.team_alias || team.team_id}
               </TableCell>
               <TableCell>
-                {team.members_with_roles?.map((member, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <span>
-                      {member.user_email || member.user_id}
-                      {member.role === "admin" && (
-                        <Badge variant="secondary" className="ml-2">
-                          Admin
-                        </Badge>
-                      )}
-                    </span>
-                  </div>
-                ))}
+                {team.members_with_roles && team.members_with_roles.length > 0 ? (
+                  team.members_with_roles.map((member, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span>
+                        {member.user_email || member.user_id}
+                        {member.role === "admin" && (
+                          <Badge variant="secondary" className="ml-2">
+                            Admin
+                          </Badge>
+                        )}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <span className="text-gray-500">No members</span>
+                )}
               </TableCell>
               <TableCell>
                 <div className="flex flex-wrap gap-2">
@@ -66,7 +70,7 @@ export function TeamList({ teams, onEdit, onDelete }: TeamListProps) {
                 </div>
               </TableCell>
               <TableCell>
-                {team.max_budget ? (
+                {team.max_budget !== undefined ? (
                   <div>
                     ${team.max_budget}
                     {team.budget_duration && (

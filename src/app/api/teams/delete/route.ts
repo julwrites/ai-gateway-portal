@@ -17,9 +17,13 @@ export async function POST(request: Request) {
     
     // Transform frontend team data to match OpenAPI schema
     const litellmBody = {
-      team_ids: Array.isArray(teamData.team_ids) ? teamData.team_ids : [teamData.team_id]
+      team_ids: Array.isArray(teamData.team_ids) 
+        ? teamData.team_ids 
+        : teamData.team_id 
+          ? [teamData.team_id]
+          : []
     };
-
+    
     const url = getApiUrl('/team/delete');
 
     // Log request details (excluding sensitive data)

@@ -12,15 +12,40 @@ export function TeamForm({ onSubmit, onClose, initialData, isEdit = false }: Tea
     metadata: {},
     tpm_limit: undefined,
     rpm_limit: undefined,
-    members_with_roles: []
+    members_with_roles: [],
+    organization_id: undefined,
+    blocked: false,
+    max_parallel_requests: undefined,
+    tags: [],
+    model_aliases: {},
+    guardrails: {}
   });
 
   const [newMember, setNewMember] = useState<Member>({ user_id: '', role: 'user' });
   const [newModel, setNewModel] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const validateForm = () => {
+    if (!formData.team_alias) {
+      setFormError('Team name is required');
+      return false;
+    }
+    // Add more validation as needed
+    return true;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit(formData);
+
+    if (!validateForm()) {
+      return;
+    }
+    try {
+      await onSubmit(formData);
+      setFormError(null);
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'An error occurred while submitting the form');
+    }
   };
 
   const addMember = () => {

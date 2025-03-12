@@ -45,13 +45,13 @@ export default function TeamsPage() {
         },
         body: JSON.stringify(data),
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to create team');
       }
-
-      const { team: newTeam } = await response.json();
+  
+      const newTeam = await response.json();
       setTeams(prevTeams => [...prevTeams, newTeam]);
       setShowCreateForm(false);
       setError(null);
@@ -65,7 +65,7 @@ export default function TeamsPage() {
   const handleEditTeam = async (data: TeamFormData) => {
     try {
       const response = await fetch('/api/teams/update', {
-        method: 'PUT',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -74,22 +74,26 @@ export default function TeamsPage() {
           ...data
         }),
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to update team');
       }
-
-      const { team: updatedTeam } = await response.json();
-      setTeams(prevTeams => 
-        prevTeams.map(t => t.team_id === updatedTeam.team_id ? updatedTeam : t)
-      );
+  
+      // Refetch all teams
+      const teamsResponse = await fetch('/api/teams/list');
+      if (!teamsResponse.ok) {
+        throw new Error('Failed to fetch updated teams list');
+      }
+      const updatedTeams = await teamsResponse.json();
+      setTeams(Array.isArray(updatedTeams) ? updatedTeams : []);
+  
       setShowCreateForm(false);
       setEditTeam(null);
       setError(null);
     } catch (err) {
+      console.error('Error in handleEditTeam:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to update team';
-      console.error('Error in handleEditTeam:', errorMessage);
       setError(errorMessage);
     }
   };
@@ -97,18 +101,18 @@ export default function TeamsPage() {
   const handleDeleteTeam = async (teamId: string) => {
     try {
       const response = await fetch('/api/teams/delete', {
-        method: 'DELETE',
+        method: 'POST',  // Changed from 'DELETE' to 'POST'
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ team_id: teamId }),
+        body: JSON.stringify({ team_ids: [teamId] }),  // Changed from team_id to team_ids
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to delete team');
       }
-
+  
       setTeams(prevTeams => prevTeams.filter(team => team.team_id !== teamId));
       setError(null);
     } catch (err) {
@@ -119,6 +123,7 @@ export default function TeamsPage() {
   };
 
   const handleStartEdit = (team: Team) => {
+    console.log('Starting edit for team:', team);
     const formData: TeamFormData = {
       team_alias: team.team_alias,
       max_budget: team.max_budget,

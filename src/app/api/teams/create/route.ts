@@ -1,114 +1,140 @@
 import { NextResponse } from 'next/server';
-import { Team } from '@/types/teams';
 import { getHeaders, getApiUrl } from '@/lib/config';
 
+// Define the interface for the request body
+interface TeamCreateRequest {
+  team_alias?: string;
+  team_id?: string;
+  organization_id?: string;
+  admins?: string[];
+  members?: string[];
+  members_with_roles?: Array<{ role: string; user_id: string }>;
+  metadata?: Record<string, any>;
+  tpm_limit?: number;
+  rpm_limit?: number;
+  max_budget?: number;
+  budget_duration?: string;
+  models?: string[];
+  blocked?: boolean;
+  model_aliases?: Record<string, string>;
+  tags?: string[];
+  guardrails?: string[];
+}
+
+interface APIErrorResponse {
+  error: {
+    message: string;
+    type: string;
+    param: string;
+    code: string;
+  };
+}
+
+function isValidDuration(duration: string): boolean {
+  const validPattern = /^\d+[dhms]$/;
+  return validPattern.test(duration);
+}
+
 export async function POST(request: Request) {
-  console.log('\n=== Creating Team ===');
-  
   try {
-    // Verify we have the API key
     const headers = getHeaders();
     if (!headers.Authorization) {
       throw new Error('API key not configured');
     }
 
-    // Get request body and transform to match OpenAPI schema
-    const teamData = await request.json();
+    const teamData: TeamCreateRequest = await request.json();
     
-    // Transform frontend team data to match OpenAPI schema
-    const litellmBody = {
-      team_alias: teamData.team_alias,
-      team_id: teamData.team_id,
-      organization_id: teamData.organization_id,
-      members_with_roles: teamData.members_with_roles?.map((member: any) => ({
-        role: member.role,
-        user_id: member.user_id
-      })),
-      metadata: teamData.metadata,
-      tpm_limit: teamData.tpm_limit ? Number(teamData.tpm_limit) : undefined,
-      rpm_limit: teamData.rpm_limit ? Number(teamData.rpm_limit) : undefined,
-      max_budget: teamData.max_budget ? Number(teamData.max_budget) : undefined,
-      budget_duration: teamData.budget_duration,
-      models: teamData.models || [],
-      blocked: teamData.blocked || false,
-      model_aliases: teamData.model_aliases,
-      tags: teamData.tags,
-      guardrails: teamData.guardrails
-    };
+    if (teamData.budget_duration && !isValidDuration(teamData.budget_duration)) {
+      return NextResponse.json(
+        { 
+          error: {
+            message: 'Invalid budget duration format. Use format like "1d", "7d", "24h", "60m", etc.',
+            type: 'validation_error',
+            param: 'budget_duration',
+            code: '400'
+          }
+        },
+        { status: 400 }
+      );
+    }
+
+    if (teamData.organization_id) {
+      const isValid = await isValidOrganization(teamData.organization_id);
+      if (!isValid) {
+        return NextResponse.json(
+          {
+            error: {
+              message: 'The specified organization does not exist. Please provide a valid organization_id.',
+              type: 'validation_error',
+              param: 'organization_id',
+              code: '400'
+            }
+          },
+          { status: 400 }
+        );
+      }
+    }
 
     const url = getApiUrl('/team/new');
 
-    // Log request details (excluding sensitive data)
-    console.log('Request Details:');
-    console.log('URL:', url);
-    console.log('Headers:', {
-      ...headers,
-      Authorization: 'Bearer [REDACTED]'
-    });
-    console.log('Body:', litellmBody);
+    // Add handling for litellm-changed-by header
+    const litellmChangedBy = request.headers.get('litellm-changed-by');
+    if (litellmChangedBy) {
+      headers['litellm-changed-by'] = litellmChangedBy;
+    }
 
-    // Make the request
+    console.log('Team data:', teamData);
+    console.log('API URL:', url);
+    console.log('Headers:', headers);
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         ...headers,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(litellmBody),
+      body: JSON.stringify(teamData),
     });
 
-    // Log response details
-    console.log('\nResponse Details:');
-    console.log('Status:', response.status);
-    console.log('Headers:', response.headers);
+    console.log('Response status:', response.status);
 
-    const responseText = await response.text();
-    
     if (!response.ok) {
-      console.error('Error Response:', responseText);
-      throw new Error(`Failed to create team: ${responseText}`);
+      const errorResponse: APIErrorResponse = await response.json();
+      console.error('Full error response:', errorResponse);
+
+      // Check for the specific foreign key constraint error
+      if (errorResponse.error.message.includes('Foreign key constraint failed') &&
+          errorResponse.error.message.includes('LiteLLM_TeamTable_organization_id_fkey')) {
+        return NextResponse.json(
+          {
+            error: {
+              message: 'The specified organization does not exist. Please provide a valid organization_id.',
+              type: 'validation_error',
+              param: 'organization_id',
+              code: '400'
+            }
+          },
+          { status: 400 }
+        );
+      }
+
+      // For other errors, return the original error response
+      return NextResponse.json(errorResponse, { status: parseInt(errorResponse.error.code) });
     }
 
-    // Parse and validate response
-    let data;
-    try {
-      data = JSON.parse(responseText);
-      console.log('\nParsed Response:', JSON.stringify(data, null, 2));
-    } catch (e) {
-      console.error('Failed to parse response:', e);
-      throw new Error('Invalid JSON response from server');
-    }
-
-    console.log('=== Team Created Successfully ===\n');
-    // Transform response to match OpenAPI schema
-    const transformedTeam = {
-      team_id: data.team_id,
-      team_alias: data.team_alias,
-      organization_id: data.organization_id,
-      members_with_roles: data.members_with_roles || [],
-      metadata: data.metadata,
-      tpm_limit: data.tpm_limit,
-      rpm_limit: data.rpm_limit,
-      max_budget: data.max_budget,
-      budget_duration: data.budget_duration,
-      models: data.models || [],
-      blocked: data.blocked || false,
-      spend: data.spend || 0,
-      max_parallel_requests: data.max_parallel_requests,
-      budget_reset_at: data.budget_reset_at,
-      model_aliases: data.model_aliases,
-      created_at: data.created_at
-    };
-
-    return NextResponse.json(transformedTeam);
+    const createdTeam = await response.json();
+    return NextResponse.json(createdTeam);
   } catch (error) {
-    console.error('\nError in team create route:', error);
+    console.error('Error in teams create API route:', error);
     return NextResponse.json(
       { 
-        error: 'Failed to create team',
-        details: error instanceof Error ? error.message : String(error)
+        detail: [{ 
+          msg: 'Failed to create team', 
+          loc: ['body'], 
+          type: error instanceof Error ? error.name : 'UnknownError'
+        }]
       },
-      { status: 500 }
+      { status: 422 }
     );
   }
 }
