@@ -1,45 +1,45 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { User, UserFormData } from '@/types/users';
-import { getHeaders, getApiUrl } from '@/lib/config';
+import { useState, useEffect, useCallback } from 'react';
+import { UserRequest, UserResponse } from '@/types/users';
 import { UserList } from './components/UserList';
 import { UserForm } from './components/UserForm';
+import { isValidDuration } from '@/lib/validators';
 
 export default function UsersPage() {
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
+  const [showUserForm, setShowUserForm] = useState(false);
+  const [users, setUsers] = useState<UserResponse[]>([]);
+  const [editingUser, setEditingUser] = useState<UserResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch('/api/users/list');
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to fetch users');
-        }
-        
-        const data = await response.json();
-        setUsers(data.users || []);
-        // You can also set pagination info if needed
-        // setPagination({ total: data.total, page: data.page, ... });
-        setError(null);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Failed to fetch users';
-        console.error('Error in fetchUsers:', errorMessage);
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
   }, []);
 
-  const handleCreateUser = async (data: UserFormData) => {
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/users/list');
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch users');
+      }
+      
+      const data = await response.json();
+      setUsers(data.users || []);
+      setError(null);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch users';
+      console.error('Error in fetchUsers:', errorMessage);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleCreateUser = async (data: UserRequest) => {
     try {
       const response = await fetch('/api/users/create', {
         method: 'POST',
@@ -48,15 +48,14 @@ export default function UsersPage() {
         },
         body: JSON.stringify(data),
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to create user');
       }
-
-      const { user: newUser } = await response.json();
-      setUsers(prevUsers => [...prevUsers, newUser]);
-      setShowCreateForm(false);
+  
+      await fetchUsers();
+      setShowUserForm(false);
       setError(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create user';
@@ -64,26 +63,31 @@ export default function UsersPage() {
       setError(errorMessage);
     }
   };
-
-  const handleEditUser = async (user: User) => {
+  
+  const handleEditUser = async (user: UserRequest) => {
     try {
+      // Validate budget_duration
+      if (user.budget_duration && !isValidDuration(user.budget_duration)) {
+        throw new Error('Invalid budget duration format. Use formats like "30s", "30m", "30h", "30d", or "1mo".');
+      }
+
       const response = await fetch('/api/users/update', {
-        method: 'PUT',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(user),
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to update user');
       }
-
-      const { user: updatedUser } = await response.json();
-      setUsers(prevUsers => 
-        prevUsers.map(u => u.user_id === updatedUser.user_id ? updatedUser : u)
-      );
+  
+      // Instead of updating the local state, refresh the entire user list
+      await fetchUsers();
+      setShowUserForm(false);
+      setEditingUser(null);
       setError(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update user';
@@ -95,18 +99,18 @@ export default function UsersPage() {
   const handleDeleteUser = async (userId: string) => {
     try {
       const response = await fetch('/api/users/delete', {
-        method: 'DELETE',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ user_id: userId }),
+        body: JSON.stringify({ user_ids: [userId] }), // Change this line
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to delete user');
       }
-
+  
       setUsers(prevUsers => prevUsers.filter(user => user.user_id !== userId));
       setError(null);
     } catch (err) {
@@ -121,7 +125,10 @@ export default function UsersPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Users Management</h1>
         <button 
-          onClick={() => setShowCreateForm(true)}
+          onClick={() => {
+            setEditingUser(null);
+            setShowUserForm(true);
+          }}
           className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
         >
           Create User
@@ -135,15 +142,23 @@ export default function UsersPage() {
       ) : (
         <UserList 
           users={users} 
-          onEdit={handleEditUser} 
+          onEdit={(user) => {
+            setEditingUser(user);
+            setShowUserForm(true);
+          }} 
           onDelete={handleDeleteUser} 
         />
       )}
       
-      {showCreateForm && (
+      {showUserForm && (
         <UserForm 
-          onClose={() => setShowCreateForm(false)}
-          onSubmit={handleCreateUser}
+          onClose={() => {
+            setShowUserForm(false);
+            setEditingUser(null);
+          }}
+          onSubmit={editingUser ? handleEditUser : handleCreateUser}
+          initialData={editingUser || undefined}
+          isEdit={!!editingUser}
         />
       )}
     </div>

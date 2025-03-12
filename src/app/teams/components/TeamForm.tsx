@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { TeamFormData, TeamFormProps, Member } from '@/types/teams';
+import { validateTeamData } from '@/lib/validators';
 
 export function TeamForm({ onSubmit, onClose, initialData, isEdit = false }: TeamFormProps) {
   const [formData, setFormData] = useState<TeamFormData>({
@@ -60,7 +61,9 @@ export function TeamForm({ onSubmit, onClose, initialData, isEdit = false }: Tea
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) {
+    const error = validateTeamData(formData);
+    if (error) {
+      setFormError(error);
       return;
     }
     try {
@@ -77,16 +80,7 @@ export function TeamForm({ onSubmit, onClose, initialData, isEdit = false }: Tea
       setFormError(error instanceof Error ? error.message : 'An error occurred while submitting the form');
     }
   };
-
-  const validateForm = () => {
-    if (!formData.team_alias) {
-      setFormError('Team name is required');
-      return false;
-    }
-    // Add more validation as needed
-    return true;
-  };
-
+  
   const addMember = () => {
     if (newMember.user_id) {
       setFormData(prev => ({

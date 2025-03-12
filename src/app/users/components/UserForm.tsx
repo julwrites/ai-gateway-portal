@@ -1,17 +1,11 @@
 "use client";
 
 import { useState } from 'react';
-import { UserFormData, UserRole } from '@/types/users';
-
-interface UserFormProps {
-  onSubmit: (data: UserFormData) => Promise<void>;
-  onClose: () => void;
-  initialData?: UserFormData;
-  isEdit?: boolean;
-}
+import { UserRequest, UserFormProps, UserRole } from '@/types/users';
+import { validateUserData } from '@/lib/validators';
 
 export function UserForm({ onSubmit, onClose, initialData, isEdit = false }: UserFormProps) {
-  const [formData, setFormData] = useState<UserFormData>(initialData || {
+  const [formData, setFormData] = useState<UserRequest>(initialData || {
     user_email: '',
     user_role: 'internal_user',
     teams: [],
@@ -21,10 +15,22 @@ export function UserForm({ onSubmit, onClose, initialData, isEdit = false }: Use
     rpm_limit: undefined,
     budget_duration: undefined,
   });
+  const [formError, setFormError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit(formData);
+    const error = validateUserData(formData);
+    if (error) {
+      setFormError(error);
+      return;
+    }
+    try {
+      await onSubmit(formData);
+      setFormError(null);
+      onClose(); // Close the form after successful submission
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'An error occurred while submitting the form');
+    }
   };
 
   return (
@@ -33,6 +39,12 @@ export function UserForm({ onSubmit, onClose, initialData, isEdit = false }: Use
         <h2 className="text-xl font-bold mb-4">
           {isEdit ? 'Edit User' : 'Create User'}
         </h2>
+        
+        {formError && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <span className="block sm:inline">{formError}</span>
+          </div>
+        )}
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -60,8 +72,8 @@ export function UserForm({ onSubmit, onClose, initialData, isEdit = false }: Use
             >
               <option value="internal_user">Internal User</option>
               <option value="internal_user_viewer">Internal User (Viewer)</option>
-              <option value="team">Team</option>
-              <option value="customer">Customer</option>
+              <option value="proxy_admin">Admin</option>
+              <option value="proxy_admin_viewer">Admin (Viewer)</option>
             </select>
           </div>
 
@@ -77,7 +89,6 @@ export function UserForm({ onSubmit, onClose, initialData, isEdit = false }: Use
               placeholder="Optional"
             />
           </div>
-
           <div>
             <label className="block text-sm font-medium mb-1">
               Budget Duration
@@ -87,10 +98,12 @@ export function UserForm({ onSubmit, onClose, initialData, isEdit = false }: Use
               onChange={(e) => setFormData({ ...formData, budget_duration: e.target.value || undefined })}
               className="w-full p-2 border rounded"
             >
-              <option value="">No duration</option>
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
+              <option value="">Select duration</option>
+              <option value="1d">1 Day</option>
+              <option value="7d">7 Days</option>
+              <option value="30d">30 Days</option>
+              <option value="1h">1 Hour</option>
+              <option value="12h">12 Hours</option>
             </select>
           </div>
 

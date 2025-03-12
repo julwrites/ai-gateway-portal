@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getHeaders, getApiUrl } from '@/lib/config';
+import { isValidDuration } from '@/lib/validators';
 
 // Define the interface for the request body
 interface TeamCreateRequest {
@@ -30,11 +31,6 @@ interface APIErrorResponse {
   };
 }
 
-function isValidDuration(duration: string): boolean {
-  const validPattern = /^\d+[dhms]$/;
-  return validPattern.test(duration);
-}
-
 export async function POST(request: Request) {
   try {
     const headers = getHeaders();
@@ -56,23 +52,6 @@ export async function POST(request: Request) {
         },
         { status: 400 }
       );
-    }
-
-    if (teamData.organization_id) {
-      const isValid = await isValidOrganization(teamData.organization_id);
-      if (!isValid) {
-        return NextResponse.json(
-          {
-            error: {
-              message: 'The specified organization does not exist. Please provide a valid organization_id.',
-              type: 'validation_error',
-              param: 'organization_id',
-              code: '400'
-            }
-          },
-          { status: 400 }
-        );
-      }
     }
 
     const url = getApiUrl('/team/new');

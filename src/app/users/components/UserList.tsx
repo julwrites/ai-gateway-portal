@@ -1,6 +1,5 @@
 "use client";
 
-import { User } from "@/types/users";
 import {
   Table,
   TableBody,
@@ -12,10 +11,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2 } from "lucide-react";
+import { UserResponse } from '@/types/users';
 
 interface UserListProps {
-  users: User[];
-  onEdit: (user: User) => void;
+  users: UserResponse[];
+  onEdit: (user: UserResponse) => void;
   onDelete: (userId: string) => void;
 }
 

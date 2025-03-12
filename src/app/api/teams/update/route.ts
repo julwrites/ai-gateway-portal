@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Team } from '@/types/teams';
 import { getHeaders, getApiUrl } from '@/lib/config';
+import { validateTeamData } from '@/lib/validators';
 
 export async function POST(request: Request) {
   console.log('\n=== Updating Team ===');
@@ -14,7 +15,11 @@ export async function POST(request: Request) {
 
     // Get request body and transform to match OpenAPI schema
     const teamData = await request.json();
-    
+    const validationError = validateTeamData(teamData);
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
+    }
+ 
     // Transform frontend team data to match OpenAPI schema
     const litellmBody = {
       team_id: teamData.team_id, // required field
