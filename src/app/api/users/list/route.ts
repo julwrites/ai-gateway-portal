@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { User } from '@/types/users';
 import { getHeaders, getApiUrl } from '@/lib/config';
 
 export const dynamic = 'force-dynamic';

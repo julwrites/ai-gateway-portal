@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     // Add handling for litellm-changed-by header
     const litellmChangedBy = request.headers.get('litellm-changed-by');
     if (litellmChangedBy) {
-      headers['litellm-changed-by'] = litellmChangedBy;
+      Object.assign(headers, { 'litellm-changed-by': litellmChangedBy });    
     }
 
     console.log('Team data:', teamData);

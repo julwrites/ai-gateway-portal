@@ -6,10 +6,10 @@ import { TeamList } from './components/TeamList';
 import { TeamForm } from './components/TeamForm';
 import { Team, TeamFormData } from '@/types/teams';
 
-const DatePicker = dynamic(() => import('react-datepicker'), { ssr: false });
-const Select = dynamic(() => import('react-select'), { ssr: false });
-
-import "react-datepicker/dist/react-datepicker.css";
+type SelectedTeam = {
+  value: string;
+  label: string;
+};
 
 export default function TeamsPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -21,7 +21,7 @@ export default function TeamsPage() {
   // Dashboard state
   const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 30)));
   const [endDate, setEndDate] = useState(new Date());
-  const [selectedTeams, setSelectedTeams] = useState([]);
+  const [selectedTeams, setSelectedTeams] = useState<SelectedTeam[]>([]);
   const [spendReport, setSpendReport] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
 
@@ -43,7 +43,8 @@ export default function TeamsPage() {
       setError(null);
 
       // Set all teams as selected by default
-      setSelectedTeams(teamsData.map(team => ({ value: team.team_id, label: team.team_alias || team.team_id })));
+      let selectedTeams = teamsData.map((team: any) => {return { value: team.team_id, label: team.team_alias || team.team_id }})
+      setSelectedTeams(selectedTeams);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch teams';
       console.error('Error in fetchTeams:', errorMessage);

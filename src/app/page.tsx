@@ -1,19 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
-
-const DatePicker = dynamic(() => import('react-datepicker'), { ssr: false });
-const Select = dynamic(() => import('react-select'), { ssr: false });
-
-import "react-datepicker/dist/react-datepicker.css";
 
 export default function Home() {
   const [startDate, setStartDate] = useState(new Date(new Date().setDate(new Date().getDate() - 30)));
   const [endDate, setEndDate] = useState(new Date());
   const [selectedItems, setSelectedItems] = useState([]);
   const [groupBy, setGroupBy] = useState({ value: 'team', label: 'Team' });
-  const [spendReport, setSpendReport] = useState(null);
   const [users, setUsers] = useState([]);
   const [teams, setTeams] = useState([]);
   const [apiKeys, setApiKeys] = useState([]);
@@ -35,43 +28,25 @@ export default function Home() {
   const fetchUsers = async () => {
     const response = await fetch('/api/users/list');
     const data = await response.json();
-    setUsers(data.users.map(user => ({ value: user.user_id, label: user.user_email || user.user_id })));
+    setUsers(data.users.map((user: any) => ({ value: user.user_id, label: user.user_email || user.user_id })));
   };
 
   const fetchTeams = async () => {
     const response = await fetch('/api/teams/list');
     const data = await response.json();
-    setTeams(data.map(team => ({ value: team.team_id, label: team.team_alias || team.team_id })));
+    setTeams(data.map((team: any) => ({ value: team.team_id, label: team.team_alias || team.team_id })));
   };
 
   const fetchApiKeys = async () => {
     const response = await fetch('/api/keys/list');
     const data = await response.json();
-    setApiKeys(data.keys.map(key => ({ value: key.id, label: key.key_alias || key.id })));
+    setApiKeys(data.keys.map((key: any) => ({ value: key.id, label: key.key_alias || key.id })));
   };
 
   const fetchModels = async () => {
     const response = await fetch('/api/models/list');
     const data = await response.json();
-    setModels(data.data.map(model => ({ value: model.model_id, label: model.display_name })));
-  };
-
-  const handleFetchReport = async () => {
-    const response = await fetch('/global/spend/report', {
-      method: 'GET',
-      headers: {
-        'Authorization': 'Bearer sk-1234', // Replace with actual auth
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        start_date: startDate.toISOString(),
-        end_date: endDate.toISOString(),
-        group_by: groupBy.value,
-        [groupBy.value]: selectedItems.map(item => item.value),
-      }),
-    });
-    const data = await response.json();
-    setSpendReport(data);
+    setModels(data.data.map((model: any) => ({ value: model.model_id, label: model.display_name })));
   };
 
   return (
@@ -90,7 +65,13 @@ export default function Home() {
   )
 }
 
-function DashboardCard({ title, count, link }) {
+interface DashboardCardProps {
+  title: string;
+  count: number;
+  link: string;
+}
+
+function DashboardCard({ title, count, link }: DashboardCardProps) {
   return (
     <div className="bg-white overflow-hidden shadow rounded-lg">
       <div className="p-5">
