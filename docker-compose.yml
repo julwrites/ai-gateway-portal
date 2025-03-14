@@ -8,9 +8,10 @@ services:
     env_file:
       - .env
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
     volumes:
       - .:/app
       - /app/node_modules
       - /app/.next
+      - .env:/app/.env
     restart: unless-stopped
