@@ -1,54 +1,52 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-let isLogging = false;
-
-export async function middleware(request: NextRequest) {
-  // Only log API routes
-  if (!request.url.includes('/api/')) {
+// This middleware checks if the app is configured
+// If not, it redirects to the config page
+export function middleware(request: NextRequest) {
+  // Debug middleware execution
+  console.log('Middleware running for path:', request.nextUrl.pathname);
+  
+  // Skip middleware for API routes, the config page itself, and static assets
+  if (
+    request.nextUrl.pathname.startsWith('/api') ||
+    request.nextUrl.pathname.startsWith('/config') ||
+    request.nextUrl.pathname.includes('_next') ||
+    request.nextUrl.pathname.includes('favicon.ico') ||
+    request.nextUrl.pathname.endsWith('.svg') ||
+    request.nextUrl.pathname.endsWith('.png') ||
+    request.nextUrl.pathname.endsWith('.jpg') ||
+    request.nextUrl.pathname.endsWith('.ico')
+  ) {
+    console.log('Skipping middleware for excluded path');
     return NextResponse.next();
   }
 
-  if (isLogging) {
-    console.log('\n=== API Request ===');
-    console.log('URL:', request.url);
-    console.log('Method:', request.method);
-    console.log('Headers:', {
-      ...Object.fromEntries(request.headers.entries()),
-      // Redact sensitive headers
-      authorization: request.headers.get('authorization') ? '[REDACTED]' : undefined
-    });
+  // Check if configuration exists in cookies
+  const configSet = request.cookies.get('config-set')?.value;
+  console.log('Config cookie value:', configSet);
+
+  // If configuration is not set, redirect to config page
+  if (!configSet || configSet !== 'true') {
+    console.log('Redirecting to config page');
+    return NextResponse.redirect(new URL('/config', request.url));
   }
 
-  const response = await fetch(request.url, {
-    method: request.method,
-    headers: request.headers,
-    body: request.method !== 'GET' ? await request.text() : undefined,
-  });
-  const responseBody = await response.text();
-
-  if (isLogging) {
-    console.log('\n=== API Response ===');
-    console.log('Status:', response.status);
-    console.log('Headers:', Object.fromEntries(response.headers.entries()));
-
-    try {
-      const jsonBody = JSON.parse(responseBody);
-      console.log('Response Body:', JSON.stringify(jsonBody, null, 2));
-    } catch {
-      console.log('Response Body:', responseBody);
-    }
-    console.log('==================\n');
-  }
-
-  // Clone the response to avoid consuming it
-  return new Response(responseBody, {
-    status: response.status,
-    headers: response.headers,
-  });
+  console.log('Config detected, proceeding normally');
+  return NextResponse.next();
 }
 
-// Configure middleware to run only for API routes
+// See "Matching Paths" below to learn more
 export const config = {
-  matcher: '/api/:path*',
+  matcher: [
+    /*
+     * Match all request paths except:
+     * 1. /api routes
+     * 2. /_next/static (static files)
+     * 3. /_next/image (image optimization files)
+     * 4. /favicon.ico (favicon file)
+     * 5. /config (config page)
+     */
+    '/((?!api|_next/static|_next/image|config|favicon.ico).*)',
+  ],
 };

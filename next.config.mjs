@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Set custom port to avoid conflicts
+  serverRuntimeConfig: {
+    port: 8765
+  },
   env: {
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
     LITELLM_API_KEY: process.env.LITELLM_API_KEY,
