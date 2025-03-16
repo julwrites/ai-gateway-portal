@@ -1,54 +1,30 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-let isLogging = false;
+// Define which paths should be accessible without configuration
+const publicPaths = ['/settings']
 
 export async function middleware(request: NextRequest) {
-  // Only log API routes
-  if (!request.url.includes('/api/')) {
-    return NextResponse.next();
+  const { pathname } = request.nextUrl
+
+  // Allow access to public paths regardless of configuration
+  if (publicPaths.some(path => pathname.startsWith(path))) {
+    return NextResponse.next()
   }
 
-  if (isLogging) {
-    console.log('\n=== API Request ===');
-    console.log('URL:', request.url);
-    console.log('Method:', request.method);
-    console.log('Headers:', {
-      ...Object.fromEntries(request.headers.entries()),
-      // Redact sensitive headers
-      authorization: request.headers.get('authorization') ? '[REDACTED]' : undefined
-    });
+  // Get configuration from cookies
+  const configVerified = request.cookies.get('config_verified')?.value
+
+  // If configuration is not verified, redirect to settings
+  if (configVerified !== 'true') {
+    const url = new URL('/settings', request.url)
+    return NextResponse.redirect(url)
   }
 
-  const response = await fetch(request.url, {
-    method: request.method,
-    headers: request.headers,
-    body: request.method !== 'GET' ? await request.text() : undefined,
-  });
-  const responseBody = await response.text();
-
-  if (isLogging) {
-    console.log('\n=== API Response ===');
-    console.log('Status:', response.status);
-    console.log('Headers:', Object.fromEntries(response.headers.entries()));
-
-    try {
-      const jsonBody = JSON.parse(responseBody);
-      console.log('Response Body:', JSON.stringify(jsonBody, null, 2));
-    } catch {
-      console.log('Response Body:', responseBody);
-    }
-    console.log('==================\n');
-  }
-
-  // Clone the response to avoid consuming it
-  return new Response(responseBody, {
-    status: response.status,
-    headers: response.headers,
-  });
+  return NextResponse.next()
 }
 
-// Configure middleware to run only for API routes
+// Configure which paths should be checked by the middleware
 export const config = {
-  matcher: '/api/:path*',
-};
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+}

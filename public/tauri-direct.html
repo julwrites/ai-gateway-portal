@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Direct Tauri API Test</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #2d3748;
+      margin-top: 0;
+    }
+    .field {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 5px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #4299e1;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      width: 100%;
+    }
+    button:disabled {
+      background-color: #a0aec0;
+      cursor: not-allowed;
+    }
+    .debug {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #edf2f7;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .debug pre {
+      margin: 0;
+      white-space: pre-wrap;
+    }
+    .success {
+      background-color: #c6f6d5;
+      border-left: 4px solid #38a169;
+      padding: 8px 12px;
+      margin: 8px 0;
+      border-radius: 4px;
+    }
+    .error {
+      background-color: #fed7d7;
+      border-left: 4px solid #e53e3e;
+      padding: 8px 12px;
+      margin: 8px 0;
+      border-radius: 4px;
+    }
+    #log {
+      max-height: 200px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Direct Tauri API Test</h1>
+    <p>This page directly interacts with Tauri, bypassing React/Next.js</p>
+    
+    <div class="field">
+      <label for="baseUrl">Base URL:</label>
+      <input type="text" id="baseUrl" placeholder="http://localhost:4000">
+      <div id="baseUrlInfo" class="text-xs text-gray-500"></div>
+    </div>
+    
+    <div class="field">
+      <label for="apiKey">API Key:</label>
+      <input type="password" id="apiKey" placeholder="Your API key">
+      <div id="apiKeyInfo" class="text-xs text-gray-500"></div>
+    </div>
+    
+    <div id="messageArea"></div>
+    
+    <button id="saveButton" disabled>Connect and Save</button>
+    
+    <div class="debug">
+      <h3>Debug Information:</h3>
+      <div>
+        Button State: <span id="buttonState">Disabled</span>
+      </div>
+      <div>
+        Tauri Available: <span id="tauriStatus">Checking...</span>
+      </div>
+      <pre id="debugOutput">Loading...</pre>
+      
+      <h3>Event Log:</h3>
+      <div id="log"></div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize when the document is ready
+    document.addEventListener('DOMContentLoaded', function() {
+      const baseUrlInput = document.getElementById('baseUrl');
+      const apiKeyInput = document.getElementById('apiKey');
+      const saveButton = document.getElementById('saveButton');
+      const buttonState = document.getElementById('buttonState');
+      const tauriStatus = document.getElementById('tauriStatus');
+      const debugOutput = document.getElementById('debugOutput');
+      const messageArea = document.getElementById('messageArea');
+      const log = document.getElementById('log');
+      const baseUrlInfo = document.getElementById('baseUrlInfo');
+      const apiKeyInfo = document.getElementById('apiKeyInfo');
+      
+      // Log function
+      function logEvent(message) {
+        const timestamp = new Date().toTimeString().split(' ')[0];
+        const logEntry = document.createElement('div');
+        logEntry.textContent = `${timestamp} - ${message}`;
+        log.prepend(logEntry);
+        
+        // Only keep latest 50 entries
+        if (log.children.length > 50) {
+          log.removeChild(log.lastChild);
+        }
+      }
+      
+      // Check if Tauri is available
+      function checkTauri() {
+        if (window.__TAURI_IPC__) {
+          tauriStatus.textContent = 'Yes';
+          logEvent('Tauri detected');
+          return true;
+        } else {
+          tauriStatus.textContent = 'No';
+          logEvent('Tauri not detected');
+          return false;
+        }
+      }
+      
+      // Update button state
+      function updateButtonState() {
+        const baseUrlValue = baseUrlInput.value.trim();
+        const apiKeyValue = apiKeyInput.value.trim();
+        
+        baseUrlInfo.textContent = `Length: ${baseUrlInput.value.length}, Trimmed length: ${baseUrlValue.length}`;
+        apiKeyInfo.textContent = `Length: ${apiKeyInput.value.length}, Trimmed length: ${apiKeyValue.length}`;
+        
+        const shouldEnable = baseUrlValue.length > 0 && apiKeyValue.length > 0;
+        
+        saveButton.disabled = !shouldEnable;
+        buttonState.textContent = shouldEnable ? 'Enabled' : 'Disabled';
+        
+        updateDebugInfo();
+      }
+      
+      // Update debug information
+      function updateDebugInfo() {
+        const info = {
+          inputs: {
+            baseUrl: {
+              raw: baseUrlInput.value,
+              length: baseUrlInput.value.length,
+              trimmedLength: baseUrlInput.value.trim().length
+            },
+            apiKey: {
+              // Don't show actual key
+              length: apiKeyInput.value.length,
+              trimmedLength: apiKeyInput.value.trim().length
+            }
+          },
+          button: {
+            disabled: saveButton.disabled,
+            state: buttonState.textContent
+          },
+          tauri: {
+            available: window.__TAURI_IPC__ !== undefined
+          }
+        };
+        
+        debugOutput.textContent = JSON.stringify(info, null, 2);
+      }
+      
+      // Show a message
+      function showMessage(message, type) {
+        messageArea.innerHTML = `<div class="${type}">${message}</div>`;
+      }
+      
+      // Initialize
+      function init() {
+        logEvent('Page initialized');
+        
+        // Check if Tauri is available
+        const isTauri = checkTauri();
+        
+        // Load saved values if Tauri is available
+        if (isTauri) {
+          logEvent('Attempting to load saved configuration');
+          
+          window.__TAURI__.invoke('get_config')
+            .then(config => {
+              logEvent('Configuration loaded from Tauri');
+              if (config) {
+                baseUrlInput.value = config.api_base_url || '';
+                apiKeyInput.value = config.api_key || '';
+                updateButtonState();
+                logEvent(`Config loaded - Base URL: ${config.api_base_url ? 'Set' : 'Empty'}, API Key: ${config.api_key ? 'Set' : 'Empty'}`);
+              }
+            })
+            .catch(err => {
+              logEvent(`Error loading config: ${err}`);
+            });
+        }
+        
+        // Add event listeners
+        baseUrlInput.addEventListener('input', function() {
+          logEvent(`Base URL input changed: "${this.value}"`);
+          updateButtonState();
+        });
+        
+        apiKeyInput.addEventListener('input', function() {
+          logEvent(`API Key input changed: length=${this.value.length}`);
+          updateButtonState();
+        });
+        
+        // Add blur events to be extra safe
+        baseUrlInput.addEventListener('blur', updateButtonState);
+        apiKeyInput.addEventListener('blur', updateButtonState);
+        
+        // Handle form submission
+        saveButton.addEventListener('click', function() {
+          const baseUrl = baseUrlInput.value.trim();
+          const apiKey = apiKeyInput.value.trim();
+          
+          logEvent('Save button clicked');
+          
+          if (!baseUrl || !apiKey) {
+            showMessage('Please enter both Base URL and API Key', 'error');
+            return;
+          }
+          
+          if (isTauri) {
+            saveButton.disabled = true;
+            saveButton.textContent = 'Saving...';
+            
+            // Save base URL
+            window.__TAURI__.invoke('set_config', { key: 'api_base_url', value: baseUrl })
+              .then(() => {
+                logEvent('Base URL saved');
+                
+                // Then save API key
+                return window.__TAURI__.invoke('set_config', { key: 'api_key', value: apiKey });
+              })
+              .then(() => {
+                logEvent('API Key saved');
+                showMessage('Settings saved successfully!', 'success');
+                
+                // Test connection
+                saveButton.textContent = 'Testing connection...';
+                
+                // Simple fetch to test connection
+                return fetch(`${baseUrl}/health`, {
+                  method: 'GET',
+                  headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                  }
+                });
+              })
+              .then(response => {
+                if (!response.ok) {
+                  throw new Error(`Connection failed with status: ${response.status}`);
+                }
+                return response.json();
+              })
+              .then(data => {
+                logEvent('Connection test successful');
+                showMessage('Connection successful!', 'success');
+                
+                // Redirect to home after 2 seconds
+                setTimeout(() => {
+                  window.location.href = '/';
+                }, 2000);
+              })
+              .catch(err => {
+                logEvent(`Error: ${err.message}`);
+                showMessage(`Error: ${err.message}`, 'error');
+              })
+              .finally(() => {
+                saveButton.disabled = false;
+                saveButton.textContent = 'Connect and Save';
+                updateButtonState();
+              });
+          } else {
+            // If not in Tauri, just show a message
+            showMessage('Tauri not available - would have saved: ' + baseUrl, 'success');
+          }
+        });
+        
+        // Initial button state
+        updateButtonState();
+      }
+      
+      // Initialize
+      init();
+    });
+  </script>
+</body>
+</html>

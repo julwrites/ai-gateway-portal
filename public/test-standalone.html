@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Standalone Test Form</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #2d3748;
+      margin-top: 0;
+    }
+    label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 5px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #4299e1;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      width: 100%;
+    }
+    button:disabled {
+      background-color: #a0aec0;
+      cursor: not-allowed;
+    }
+    .debug {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #edf2f7;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .debug pre {
+      margin: 0;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Standalone Form Test</h1>
+    <p>This form is a pure HTML/JS implementation with no frameworks</p>
+    
+    <form id="settingsForm">
+      <div>
+        <label for="baseUrl">Base URL:</label>
+        <input type="text" id="baseUrl" name="baseUrl" placeholder="Enter base URL">
+      </div>
+      
+      <div>
+        <label for="apiKey">API Key:</label>
+        <input type="password" id="apiKey" name="apiKey" placeholder="Enter API key">
+      </div>
+      
+      <button type="submit" id="submitButton" disabled>Submit Form</button>
+    </form>
+    
+    <div class="debug">
+      <h3>Debug Information:</h3>
+      <pre id="debugOutput">Waiting for input...</pre>
+    </div>
+  </div>
+
+  <script>
+    // Simple form validation with pure JavaScript
+    document.addEventListener('DOMContentLoaded', function() {
+      const form = document.getElementById('settingsForm');
+      const baseUrlInput = document.getElementById('baseUrl');
+      const apiKeyInput = document.getElementById('apiKey');
+      const submitButton = document.getElementById('submitButton');
+      const debugOutput = document.getElementById('debugOutput');
+      
+      // Update debug info and button state
+      function updateState() {
+        const baseUrl = baseUrlInput.value;
+        const apiKey = apiKeyInput.value;
+        
+        const baseUrlTrimmed = baseUrl.trim();
+        const apiKeyTrimmed = apiKey.trim();
+        
+        const isValid = baseUrlTrimmed.length > 0 && apiKeyTrimmed.length > 0;
+        
+        // Update button state
+        submitButton.disabled = !isValid;
+        
+        // Update debug info
+        const debugInfo = {
+          baseUrl: baseUrl,
+          apiKey: apiKey ? '[SET]' : '[EMPTY]',
+          baseUrlLength: baseUrl.length,
+          baseUrlTrimLength: baseUrlTrimmed.length,
+          apiKeyLength: apiKey.length,
+          apiKeyTrimLength: apiKeyTrimmed.length,
+          buttonEnabled: !submitButton.disabled
+        };
+        
+        debugOutput.textContent = JSON.stringify(debugInfo, null, 2);
+      }
+      
+      // Add event listeners
+      baseUrlInput.addEventListener('input', updateState);
+      apiKeyInput.addEventListener('input', updateState);
+      
+      // Handle form submission
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        alert(`Form submitted with:\nBase URL: ${baseUrlInput.value}\nAPI Key: ${apiKeyInput.value}`);
+        
+        // Additional logging
+        console.log('Form submitted:', {
+          baseUrl: baseUrlInput.value,
+          apiKey: apiKeyInput.value ? '[SET]' : '[EMPTY]'
+        });
+      });
+      
+      // Initial state update
+      updateState();
+      
+      // Log initialization
+      console.log('Standalone form initialized');
+    });
+  </script>
+</body>
+</html>

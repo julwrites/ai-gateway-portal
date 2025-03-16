@@ -1,18 +1,39 @@
+'use client';
+
 import './globals.css'
 import { Inter } from 'next/font/google'
+import { useEffect, useState } from 'react';
+import { ConfigDialogManager } from '@/components/ConfigDialog';
+import { loadConfig } from '@/lib/config';
 
 const inter = Inter({ subsets: ['latin'] })
 
-export const metadata = {
-  title: 'LiteLLM Admin Portal',
-  description: 'Administrative interface for LiteLLM',
-}
+// Metadata moved to separate file
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const [isClient, setIsClient] = useState(false);
+  
+  // Initialize when component mounts
+  useEffect(() => {
+    setIsClient(true);
+    
+    // Load configuration at startup
+    const initializeConfig = async () => {
+      try {
+        await loadConfig();
+        console.log("Configuration loaded successfully");
+      } catch (error) {
+        console.error("Failed to load configuration:", error);
+      }
+    };
+    
+    initializeConfig();
+  }, []);
+  
   return (
     <html lang="en">
       <body className={inter.className}>
@@ -42,12 +63,16 @@ export default function RootLayout({
                     </a>
                   </div>
                 </div>
+                {/* Settings buttons removed - handled by Tauri directly in the desktop app */}
               </div>
             </div>
           </nav>
           <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
             {children}
           </main>
+          
+          {/* Configuration Dialog Manager - handles dialog display automatically via Tauri events */}
+          {isClient && <ConfigDialogManager />}
         </div>
       </body>
     </html>

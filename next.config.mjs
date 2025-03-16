@@ -1,21 +1,28 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  env: {
-    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
-    LITELLM_API_KEY: process.env.LITELLM_API_KEY,
-  },
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET,POST,PUT,DELETE,OPTIONS' },
-          { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
-        ],
-      },
+  // Check if we're in development or production mode
+  ...(process.env.NODE_ENV === 'development' ? {
+    // In development, use standard build mode to support API routes
+  } : {
+    // In production, use static export for Tauri
+    output: 'export',
+    distDir: 'out',
+  }),
+  
+  // Skip trailing slash redirect
+  skipTrailingSlashRedirect: true,
+  
+  // Configure webpack to ignore Tauri modules during build
+  webpack: (config, { isServer }) => {
+    // Add external dependencies that should be ignored
+    config.externals = [...(config.externals || []), 
+      '@tauri-apps/api/tauri',
+      '@tauri-apps/api/event',
+      '@tauri-apps/api/window'
     ];
-  },
+    
+    return config;
+  }
 };
 
 export default nextConfig;
