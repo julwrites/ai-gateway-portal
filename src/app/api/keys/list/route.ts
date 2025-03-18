@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import { APIKey } from '@/types/keys';
 import { getHeaders, getApiUrl } from '@/lib/config';
 
-export const dynamic = 'force-dynamic';
-
 export async function GET(request: Request) {
   console.log('\n=== Fetching API Keys ===');
   

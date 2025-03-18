@@ -2,24 +2,25 @@
 
 import { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
+import { testConnection, isTauriApp } from '@/lib/tauri-api';
 
 export default function TestPage() {
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isTauri, setIsTauri] = useState(false);
 
   useEffect(() => {
+    // Check if we're running in the Tauri app (client-side only)
+    setIsTauri(isTauriApp());
+    
     const fetchTestData = async () => {
       try {
         logger.log('Fetching test data');
-        const response = await fetch('/api/test');
-        logger.log('Response status:', response.status);
         
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        // Use our Tauri API utility which handles both desktop and web scenarios
+        const result = await testConnection();
         
-        const result = await response.json();
         logger.log('Received data:', result);
         setData(result);
       } catch (err) {
@@ -41,6 +42,13 @@ export default function TestPage() {
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">API Test Page</h1>
+      
+      {isTauri && (
+        <div className="mb-4 p-3 bg-green-100 text-green-800 rounded border border-green-200">
+          ✅ Running in Tauri Desktop App
+        </div>
+      )}
+      
       <pre className="bg-gray-100 p-4 rounded">
         {JSON.stringify(data, null, 2)}
       </pre>

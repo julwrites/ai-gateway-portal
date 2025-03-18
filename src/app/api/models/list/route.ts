@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import { Model } from '@/types/models';
 import { getHeaders, getApiUrl } from '@/lib/config';
 
-export const dynamic = 'force-dynamic';
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const return_wildcard_routes = searchParams.get('return_wildcard_routes') === 'true';
