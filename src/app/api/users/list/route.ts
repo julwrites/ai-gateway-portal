@@ -1,15 +1,33 @@
 import { NextResponse } from 'next/server';
-import { getHeaders, getApiUrl } from '@/lib/config';
 
 export async function GET(request: Request) {
   console.log('\n=== Fetching Users ===');
   
   try {
+    // Get configuration from headers
+    const apiBaseUrl = request.headers.get('X-API-Base-URL');
+    const apiKey = request.headers.get('X-API-Key');
+    
+    console.log('API configuration from headers:', {
+      baseUrl: apiBaseUrl,
+      keyExists: !!apiKey
+    });
+    
     // Verify we have the API key
-    const headers = getHeaders();
-    if (!headers.Authorization) {
+    if (!apiKey) {
       throw new Error('API key not configured');
     }
+    
+    if (!apiBaseUrl) {
+      throw new Error('API base URL not configured');
+    }
+    
+    // Create headers for external API
+    const headers = {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
 
     // Get query parameters
     const { searchParams } = new URL(request.url);
@@ -19,7 +37,8 @@ export async function GET(request: Request) {
     const page_size = searchParams.get('page_size') || '25';
 
     // Build URL with query parameters
-    let url = getApiUrl('/user/list');
+    const baseUrl = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
+    let url = `${baseUrl}/user/list`;
     const params = new URLSearchParams();
     if (role) params.append('role', role);
     if (user_ids) params.append('user_ids', user_ids);

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { Model } from '@/types/models';
-import { getHeaders, getApiUrl } from '@/lib/config';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -8,13 +7,34 @@ export async function GET(request: Request) {
   console.log('\n=== Fetching Models ===');
   
   try {
+    // Get configuration from headers
+    const apiBaseUrl = request.headers.get('X-API-Base-URL');
+    const apiKey = request.headers.get('X-API-Key');
+    
+    console.log('API configuration from headers:', {
+      baseUrl: apiBaseUrl,
+      keyExists: !!apiKey
+    });
+    
     // Verify we have the API key
-    const headers = getHeaders();
-    if (!headers.Authorization) {
+    if (!apiKey) {
       throw new Error('API key not configured');
     }
+    
+    if (!apiBaseUrl) {
+      throw new Error('API base URL not configured');
+    }
+    
+    // Create headers for external API
+    const headers = {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
 
-    const url = getApiUrl(`/v1/models${return_wildcard_routes ? '?return_wildcard_routes=true' : ''}`);
+    // Build URL with query parameters
+    const baseUrl = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
+    const url = `${baseUrl}/v1/models${return_wildcard_routes ? '?return_wildcard_routes=true' : ''}`;
 
     // Log request details (excluding sensitive data)
     console.log('Request Details:');
