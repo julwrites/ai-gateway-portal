@@ -1,21 +1,41 @@
 import { NextResponse } from 'next/server';
 import { UserRequest, UserResponse } from '@/types/users';
-import { getHeaders, getApiUrl } from '@/lib/config';
 
 export async function POST(request: Request) {
   console.log('\n=== Creating User ===');
   
   try {
+    // Get configuration from headers
+    const apiBaseUrl = request.headers.get('X-API-Base-URL');
+    const apiKey = request.headers.get('X-API-Key');
+    
+    console.log('API configuration from headers:', {
+      baseUrl: apiBaseUrl,
+      keyExists: !!apiKey
+    });
+    
     // Verify we have the API key
-    const headers = getHeaders();
-    if (!headers.Authorization) {
+    if (!apiKey) {
       throw new Error('API key not configured');
     }
+    
+    if (!apiBaseUrl) {
+      throw new Error('API base URL not configured');
+    }
+    
+    // Create headers for external API
+    const headers = {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
 
     // Get request body and transform to match OpenAPI schema
     const userData: UserRequest = await request.json();
     
-    const url = getApiUrl('/user/new');
+    // Build URL
+    const baseUrl = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
+    const url = `${baseUrl}/user/new`;
 
     // Log request details (excluding sensitive data)
     console.log('Request Details:');

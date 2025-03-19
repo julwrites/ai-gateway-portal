@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import { APIKey } from '@/types/keys';
 
 export async function GET(request: Request) {
+  // Get the referer to see where the request is coming from
+  const referer = request.headers.get('referer');
   console.log('\n=== Fetching API Keys ===');
+  console.log('Request from:', referer || 'unknown');
   
   try {
     // Get configuration from headers
@@ -16,11 +19,23 @@ export async function GET(request: Request) {
     
     // Verify we have the API key
     if (!apiKey) {
-      throw new Error('API key not configured');
+      console.log('API key not configured, returning empty array');
+      return NextResponse.json({ 
+        keys: [], 
+        total_count: 0, 
+        current_page: 1, 
+        total_pages: 0 
+      });
     }
     
     if (!apiBaseUrl) {
-      throw new Error('API base URL not configured');
+      console.log('API base URL not configured, returning empty array');
+      return NextResponse.json({ 
+        keys: [], 
+        total_count: 0, 
+        current_page: 1, 
+        total_pages: 0 
+      });
     }
     
     // Create headers for external API

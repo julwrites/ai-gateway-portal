@@ -1,23 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { APIKey, APIKeyFormData } from '@/types/keys';
 import { KeyList } from './components/KeyList';
 import { KeyForm } from './components/KeyForm';
+import { useConfig } from '@/lib/config-context';
 
 export default function KeysPage() {
+  const { apiBaseUrl, apiKey, isConfigured } = useConfig();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [keys, setKeys] = useState<APIKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchKeys();
-  }, []);
-
-  const fetchKeys = async () => {
+  const fetchKeys = useCallback(async () => {
     try {
-      const response = await fetch('/api/keys/list');
+      const response = await fetch('/api/keys/list', {
+        headers: {
+          'X-API-Base-URL': apiBaseUrl,
+          'X-API-Key': apiKey
+        }
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch API keys');
       }
@@ -29,7 +32,11 @@ export default function KeysPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiBaseUrl, apiKey]);
+
+  useEffect(() => {
+    fetchKeys();
+  }, [fetchKeys]);
 
   const handleCreateKey = async (data: APIKeyFormData) => {
     try {
@@ -37,6 +44,8 @@ export default function KeysPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-API-Base-URL': apiBaseUrl,
+          'X-API-Key': apiKey
         },
         body: JSON.stringify(data),
       });
@@ -60,6 +69,8 @@ export default function KeysPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-API-Base-URL': apiBaseUrl,
+          'X-API-Key': apiKey
         },
         body: JSON.stringify(updatedKey),
       });
@@ -82,6 +93,8 @@ export default function KeysPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-API-Base-URL': apiBaseUrl,
+          'X-API-Key': apiKey
         },
         body: JSON.stringify({ keys: [keyId] }),
       });
