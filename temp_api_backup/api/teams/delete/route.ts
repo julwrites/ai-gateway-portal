@@ -1,16 +1,34 @@
 import { NextResponse } from 'next/server';
 import { Team } from '@/types/teams';
-import { getHeaders, getApiUrl } from '@/lib/config';
 
 export async function POST(request: Request) {
   console.log('\n=== Deleting Team ===');
   
   try {
+    // Get configuration from headers
+    const apiBaseUrl = request.headers.get('X-API-Base-URL');
+    const apiKey = request.headers.get('X-API-Key');
+    
+    console.log('API configuration from headers:', {
+      baseUrl: apiBaseUrl,
+      keyExists: !!apiKey
+    });
+    
     // Verify we have the API key
-    const headers = getHeaders();
-    if (!headers.Authorization) {
+    if (!apiKey) {
       throw new Error('API key not configured');
     }
+    
+    if (!apiBaseUrl) {
+      throw new Error('API base URL not configured');
+    }
+    
+    // Create headers for external API
+    const headers = {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
 
     // Get request body and transform to match OpenAPI schema
     const teamData = await request.json();
@@ -24,7 +42,9 @@ export async function POST(request: Request) {
           : []
     };
     
-    const url = getApiUrl('/team/delete');
+    // Build URL
+    const baseUrl = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
+    const url = `${baseUrl}/team/delete`;
 
     // Log request details (excluding sensitive data)
     console.log('Request Details:');

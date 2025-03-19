@@ -22,6 +22,7 @@ export interface Team {
 }
 
 export interface TeamFormData {
+  team_id?: string;
   team_alias?: string;
   max_budget?: number;
   budget_duration?: string;
@@ -41,7 +42,7 @@ export interface TeamListProps {
 }
 
 export interface TeamFormProps {
-  initialData?: TeamFormData;
+  initialData?: TeamFormData | Team;
   onSubmit: (data: TeamFormData) => Promise<void>;
   onClose: () => void;
   isEdit?: boolean;

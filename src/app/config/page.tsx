@@ -27,13 +27,20 @@ export default function ConfigScreen() {
     }
   }, [configuredBaseUrl, configuredApiKey]);
 
-  // If already configured, redirect to home
+  // If already configured, redirect to home, but only if we have a valid API key
   useEffect(() => {
     console.log('Checking if already configured:', isConfigured);
-    if (isConfigured && !redirecting) {
+    // Only redirect if:
+    // 1. The user is configured
+    // 2. We're not already in the process of redirecting
+    // 3. We have a valid API key (not empty)
+    if (isConfigured && !redirecting && configuredApiKey && configuredApiKey.trim() !== '') {
+      console.log('User is configured with valid API key, redirecting to dashboard');
       router.push('/');
+    } else if (isConfigured) {
+      console.log('User is marked as configured but API key is invalid or empty');
     }
-  }, [isConfigured, router, redirecting]);
+  }, [isConfigured, router, redirecting, configuredApiKey]);
 
   const testConnection = async () => {
     setTesting(true);

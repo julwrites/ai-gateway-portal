@@ -3,9 +3,20 @@
 import { useState, useEffect } from 'react';
 import { TeamFormData, TeamFormProps, Member } from '@/types/teams';
 import { validateTeamData } from '@/lib/validators';
+import { useConfig } from '@/lib/config-context';
 
 export function TeamForm({ onSubmit, onClose, initialData, isEdit = false }: TeamFormProps) {
+  const { apiBaseUrl, apiKey } = useConfig();
+  // Log the initialData to see what's being passed
+  console.log('TeamForm initialData:', JSON.stringify(initialData, null, 2));
+  console.log('Is edit mode:', isEdit);
+  
+  // Extract team_id directly from initialData
+  const teamId = initialData ? ('team_id' in initialData ? initialData.team_id : undefined) : undefined;
+  console.log('Extracted team_id:', teamId);
+  
   const [formData, setFormData] = useState<TeamFormData>({
+    team_id: teamId,
     team_alias: initialData?.team_alias,
     models: initialData?.models,
     max_budget: initialData?.max_budget,
@@ -25,13 +36,25 @@ export function TeamForm({ onSubmit, onClose, initialData, isEdit = false }: Tea
   const [availableModels, setAvailableModels] = useState<{ model_id: string; display_name: string }[]>([]);
 
   useEffect(() => {
-    fetchUsers();
-    fetchModels();
-  }, []);
+    if (apiBaseUrl && apiKey) {
+      fetchUsers();
+      fetchModels();
+    }
+  }, [apiBaseUrl, apiKey]);
 
   const fetchUsers = async () => {
+    if (!apiBaseUrl || !apiKey) {
+      console.error('API configuration not set');
+      return;
+    }
+    
     try {
-      const response = await fetch('/api/users/list');
+      const response = await fetch('/api/users/list', {
+        headers: {
+          'X-API-Base-URL': apiBaseUrl,
+          'X-API-Key': apiKey
+        }
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch users');
       }
@@ -43,8 +66,18 @@ export function TeamForm({ onSubmit, onClose, initialData, isEdit = false }: Tea
   };
 
   const fetchModels = async () => {
+    if (!apiBaseUrl || !apiKey) {
+      console.error('API configuration not set');
+      return;
+    }
+    
     try {
-      const response = await fetch('/api/models/list');
+      const response = await fetch('/api/models/list', {
+        headers: {
+          'X-API-Base-URL': apiBaseUrl,
+          'X-API-Key': apiKey
+        }
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch models');
       }
@@ -57,11 +90,15 @@ export function TeamForm({ onSubmit, onClose, initialData, isEdit = false }: Tea
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Form submitted with data:', JSON.stringify(formData, null, 2));
+    
     const error = validateTeamData(formData);
     if (error) {
+      console.error('Validation error:', error);
       setFormError(error);
       return;
     }
+    
     try {
       // Ensure all required fields are included and properly formatted
       const submissionData = {
@@ -74,8 +111,13 @@ export function TeamForm({ onSubmit, onClose, initialData, isEdit = false }: Tea
         tpm_limit: formData.tpm_limit || undefined,
         rpm_limit: formData.rpm_limit || undefined,
       };
-      console.log('Submitting team data:', submissionData);  // Log the data being submitted
+      
+      console.log('Submitting team data:', JSON.stringify(submissionData, null, 2));
+      console.log('Is edit mode:', isEdit);
+      console.log('Team ID included:', submissionData.team_id);
+      
       await onSubmit(submissionData);
+      console.log('Form submission successful');
       setFormError(null);
     } catch (error) {
       console.error('Error submitting form:', error);

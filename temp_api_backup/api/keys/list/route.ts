@@ -1,18 +1,49 @@
 import { NextResponse } from 'next/server';
 import { APIKey } from '@/types/keys';
-import { getHeaders, getApiUrl } from '@/lib/config';
-
-export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
+  // Get the referer to see where the request is coming from
+  const referer = request.headers.get('referer');
   console.log('\n=== Fetching API Keys ===');
+  console.log('Request from:', referer || 'unknown');
   
   try {
+    // Get configuration from headers
+    const apiBaseUrl = request.headers.get('X-API-Base-URL');
+    const apiKey = request.headers.get('X-API-Key');
+    
+    console.log('API configuration from headers:', {
+      baseUrl: apiBaseUrl,
+      keyExists: !!apiKey
+    });
+    
     // Verify we have the API key
-    const headers = getHeaders();
-    if (!headers.Authorization) {
-      throw new Error('API key not configured');
+    if (!apiKey) {
+      console.log('API key not configured, returning empty array');
+      return NextResponse.json({ 
+        keys: [], 
+        total_count: 0, 
+        current_page: 1, 
+        total_pages: 0 
+      });
     }
+    
+    if (!apiBaseUrl) {
+      console.log('API base URL not configured, returning empty array');
+      return NextResponse.json({ 
+        keys: [], 
+        total_count: 0, 
+        current_page: 1, 
+        total_pages: 0 
+      });
+    }
+    
+    // Create headers for external API
+    const headers = {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
 
     // Get query parameters
     const { searchParams } = new URL(request.url);
@@ -21,7 +52,8 @@ export async function GET(request: Request) {
     // ... (keep other query parameters)
 
     // Build URL with query parameters
-    let url = getApiUrl('/key/list');
+    const baseUrl = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
+    let url = `${baseUrl}/key/list`;
     const params = new URLSearchParams();
     params.append('page', page);
     params.append('size', size);
@@ -44,7 +76,7 @@ export async function GET(request: Request) {
 
     // Fetch detailed information for each key
     const detailedKeys = await Promise.all(data.keys.map(async (key: string) => {
-      const keyInfoUrl = getApiUrl(`/key/info?key=${encodeURIComponent(key)}`);
+      const keyInfoUrl = `${baseUrl}/key/info?key=${encodeURIComponent(key)}`;
       try {
         const keyInfoResponse = await fetch(keyInfoUrl, {
           method: 'GET',

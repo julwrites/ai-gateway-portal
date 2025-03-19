@@ -3,20 +3,34 @@
 import { useState, useEffect } from 'react';
 import { APIKeyFormData, KeyFormProps } from '@/types/keys';
 import { isValidDuration } from '@/lib/validators';
+import { useConfig } from '@/lib/config-context';
 
 export function KeyForm({ onSubmit, onClose, initialData, isEdit = false }: KeyFormProps) {
+  const { apiBaseUrl, apiKey } = useConfig();
   const [formData, setFormData] = useState<APIKeyFormData>(initialData || {});
   const [formError, setFormError] = useState<string | null>(null);
   const [newModel, setNewModel] = useState('');
   const [availableModels, setAvailableModels] = useState<{ model_id: string; display_name: string }[]>([]);
 
   useEffect(() => {
-    fetchModels();
-  }, []);
+    if (apiBaseUrl && apiKey) {
+      fetchModels();
+    }
+  }, [apiBaseUrl, apiKey]);
 
   const fetchModels = async () => {
+    if (!apiBaseUrl || !apiKey) {
+      console.error('API configuration not set');
+      return;
+    }
+    
     try {
-      const response = await fetch('/api/models/list');
+      const response = await fetch('/api/models/list', {
+        headers: {
+          'X-API-Base-URL': apiBaseUrl,
+          'X-API-Key': apiKey
+        }
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch models');
       }

@@ -8,6 +8,7 @@ import { isValidDuration } from '@/lib/validators';
 import { api } from '@/lib/tauri-api';
 
 export default function UsersPage() {
+  const { apiBaseUrl, apiKey, isConfigured } = useConfig();
   const [showUserForm, setShowUserForm] = useState(false);
   const [users, setUsers] = useState<UserResponse[]>([]);
   const [editingUser, setEditingUser] = useState<UserResponse | null>(null);
@@ -17,7 +18,7 @@ export default function UsersPage() {
   useEffect(() => {
     // Fetch users
     fetchUsers();
-  }, []);
+  }, [apiBaseUrl, apiKey]);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -32,7 +33,7 @@ export default function UsersPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [apiBaseUrl, apiKey]);
 
   const handleCreateUser = async (data: UserRequest) => {
     try {
