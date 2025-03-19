@@ -5,6 +5,7 @@ import { UserRequest, UserResponse } from '@/types/users';
 import { UserList } from './components/UserList';
 import { UserForm } from './components/UserForm';
 import { isValidDuration } from '@/lib/validators';
+import { api } from '@/lib/tauri-api';
 
 export default function UsersPage() {
   const [showUserForm, setShowUserForm] = useState(false);
@@ -14,20 +15,14 @@ export default function UsersPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Fetch users
     fetchUsers();
   }, []);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/users/list');
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch users');
-      }
-      
-      const data = await response.json();
+      const data = await api.users.list();
       setUsers(data.users || []);
       setError(null);
     } catch (err) {
@@ -41,19 +36,7 @@ export default function UsersPage() {
 
   const handleCreateUser = async (data: UserRequest) => {
     try {
-      const response = await fetch('/api/users/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create user');
-      }
-  
+      await api.users.create(data);
       await fetchUsers();
       setShowUserForm(false);
       setError(null);
@@ -71,20 +54,9 @@ export default function UsersPage() {
         throw new Error('Invalid budget duration format. Use formats like "30s", "30m", "30h", "30d", or "1mo".');
       }
 
-      const response = await fetch('/api/users/update', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(user),
-      });
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update user');
-      }
-  
-      // Instead of updating the local state, refresh the entire user list
+      await api.users.update(user);
+      
+      // Refresh the entire user list
       await fetchUsers();
       setShowUserForm(false);
       setEditingUser(null);
@@ -98,19 +70,9 @@ export default function UsersPage() {
 
   const handleDeleteUser = async (userId: string) => {
     try {
-      const response = await fetch('/api/users/delete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ user_ids: [userId] }), // Change this line
-      });
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete user');
-      }
-  
+      await api.users.delete([userId]);
+      
+      // Update local state to remove the deleted user
       setUsers(prevUsers => prevUsers.filter(user => user.user_id !== userId));
       setError(null);
     } catch (err) {

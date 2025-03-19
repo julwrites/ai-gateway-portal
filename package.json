@@ -6,7 +6,10 @@
     "dev": "next dev -p 8765",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.6",
@@ -29,6 +32,8 @@
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.10",
+    "@tauri-apps/api": "^2.0.0-beta.0",
+    "@tauri-apps/cli": "^2.0.0-beta.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

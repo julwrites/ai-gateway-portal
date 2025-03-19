@@ -1,0 +1,16 @@
+{
+  "$schema": "./schemas/desktop-schema.json",
+  "identifier": "default-plugins",
+  "description": "enables the default permissions",
+  "windows": ["main"],
+  "permissions": [
+    "core:path:default",
+    "core:event:default",
+    "core:window:default",
+    "core:webview:default",
+    "core:app:default",
+    "core:resources:default",
+    "core:menu:default",
+    "core:tray:default"
+  ]
+}
