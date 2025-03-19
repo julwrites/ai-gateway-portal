@@ -4,21 +4,21 @@ const nextConfig = {
   serverRuntimeConfig: {
     port: 8765
   },
+  // Required for Tauri - export as static HTML/JS/CSS
+  output: 'export',
+  // The folder where the static files will be output
+  distDir: '.next',
+  // Disable image optimization to work with static exports
+  images: {
+    unoptimized: true,
+  },
+  // Configure Tauri to use static exports properly
+  trailingSlash: true,
+  // Disable server-side functionality for static export
+  reactStrictMode: true,
   env: {
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
     LITELLM_API_KEY: process.env.LITELLM_API_KEY,
-  },
-  async headers() {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          { key: 'Access-Control-Allow-Origin', value: '*' },
-          { key: 'Access-Control-Allow-Methods', value: 'GET,POST,PUT,DELETE,OPTIONS' },
-          { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
-        ],
-      },
-    ];
   },
 };
 

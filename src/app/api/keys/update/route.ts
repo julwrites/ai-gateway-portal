@@ -1,16 +1,35 @@
 import { NextResponse } from 'next/server';
 import { APIKey } from '@/types/keys';
-import { getHeaders, getApiUrl } from '@/lib/config';
 import { isValidDuration } from '@/lib/validators';
 
 export async function POST(request: Request) {
   console.log('\n=== Updating API Key ===');
   
   try {
-    const headers = getHeaders();
-    if (!headers.Authorization) {
+    // Get configuration from headers
+    const apiBaseUrl = request.headers.get('X-API-Base-URL');
+    const apiKey = request.headers.get('X-API-Key');
+    
+    console.log('API configuration from headers:', {
+      baseUrl: apiBaseUrl,
+      keyExists: !!apiKey
+    });
+    
+    // Verify we have the API key
+    if (!apiKey) {
       throw new Error('API key not configured');
     }
+    
+    if (!apiBaseUrl) {
+      throw new Error('API base URL not configured');
+    }
+    
+    // Create headers for external API
+    const headers = {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
 
     const keyData = await request.json();
 
@@ -48,7 +67,9 @@ export async function POST(request: Request) {
       soft_budget: keyData.soft_budget ? Number(keyData.soft_budget) : undefined,
     };
 
-    const url = getApiUrl('/key/update');
+    // Build URL
+    const baseUrl = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
+    const url = `${baseUrl}/key/update`;
 
     console.log('Request Details:', { url, body: litellmBody });
 

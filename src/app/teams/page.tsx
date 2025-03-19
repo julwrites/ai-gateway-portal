@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { TeamList } from './components/TeamList';
 import { TeamForm } from './components/TeamForm';
 import { Team, TeamFormData } from '@/types/teams';
+import { useConfig } from '@/lib/config-context';
 
 type SelectedTeam = {
   value: string;
@@ -12,6 +13,7 @@ type SelectedTeam = {
 };
 
 export default function TeamsPage() {
+  const { apiBaseUrl, apiKey, isConfigured } = useConfig();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,13 +27,15 @@ export default function TeamsPage() {
   const [spendReport, setSpendReport] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
 
-  useEffect(() => {
-    fetchTeams();
-  }, []);
-
-  const fetchTeams = async () => {
+  const fetchTeams = useCallback(async () => {
     try {
-      const response = await fetch('/api/teams/list');
+      // Pass configuration in headers
+      const response = await fetch('/api/teams/list', {
+        headers: {
+          'X-API-Base-URL': apiBaseUrl,
+          'X-API-Key': apiKey
+        }
+      });
       
       if (!response.ok) {
         throw new Error('Failed to fetch teams');
@@ -52,7 +56,11 @@ export default function TeamsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiBaseUrl, apiKey]);
+
+  useEffect(() => {
+    fetchTeams();
+  }, [fetchTeams]);
 
   const handleCreateTeam = async (data: TeamFormData) => {
     try {
@@ -61,6 +69,8 @@ export default function TeamsPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-API-Base-URL': apiBaseUrl,
+          'X-API-Key': apiKey
         },
         body: JSON.stringify(data),
       });
@@ -83,31 +93,157 @@ export default function TeamsPage() {
     }
   };
 
+  // Function to add a team member
+  const addTeamMember = async (teamId: string, member: { user_id: string, role: string }) => {
+    try {
+      console.log('Adding team member:', member, 'to team:', teamId);
+      const response = await fetch('/api/teams/member_add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Base-URL': apiBaseUrl,
+          'X-API-Key': apiKey
+        },
+        body: JSON.stringify({
+          team_id: teamId,
+          member: member
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add team member');
+      }
+
+      return await response.json();
+    } catch (err) {
+      console.error('Error adding team member:', err);
+      throw err;
+    }
+  };
+
+  // Function to delete a team member
+  const deleteTeamMember = async (teamId: string, userId: string) => {
+    try {
+      console.log('Deleting team member:', userId, 'from team:', teamId);
+      const response = await fetch('/api/teams/member_delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Base-URL': apiBaseUrl,
+          'X-API-Key': apiKey
+        },
+        body: JSON.stringify({
+          team_id: teamId,
+          user_id: userId
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete team member');
+      }
+
+      return await response.json();
+    } catch (err) {
+      console.error('Error deleting team member:', err);
+      throw err;
+    }
+  };
+
   const handleEditTeam = async (data: TeamFormData) => {
     try {
+      // Check if team_id exists in the data
+      if (!data.team_id) {
+        throw new Error('Team ID is required for updating a team');
+      }
+      
+      console.log('Updating team with ID:', data.team_id);
+      console.log('Full update data:', JSON.stringify(data, null, 2));
+      
+      // Get the current members from the editTeam state
+      const currentMembers = editTeam?.members_with_roles || [];
+      // Get the new members from the form data
+      const newMembers = data.members_with_roles || [];
+      
+      console.log('Current members:', JSON.stringify(currentMembers, null, 2));
+      console.log('New members:', JSON.stringify(newMembers, null, 2));
+      
+      // Create a copy of the data without members_with_roles for the update request
+      const { members_with_roles, ...updateData } = data;
+      
+      // Update the team properties
       const response = await fetch('/api/teams/update', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-API-Base-URL': apiBaseUrl,
+          'X-API-Key': apiKey
         },
-        body: JSON.stringify({
-          team_id: editTeam?.team_id,
-          ...data
-        }),
+        body: JSON.stringify(updateData),
       });
   
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to update team');
       }
+      
+      // Find members to add (in newMembers but not in currentMembers)
+      const membersToAdd = newMembers.filter(newMember => 
+        !currentMembers.some(currentMember => 
+          currentMember.user_id === newMember.user_id
+        )
+      );
+      
+      // Find members to remove (in currentMembers but not in newMembers)
+      const membersToRemove = currentMembers.filter(currentMember => 
+        !newMembers.some(newMember => 
+          newMember.user_id === currentMember.user_id
+        )
+      );
+      
+      // Find members whose roles have changed
+      const membersToUpdate = newMembers.filter(newMember => 
+        currentMembers.some(currentMember => 
+          currentMember.user_id === newMember.user_id && 
+          currentMember.role !== newMember.role
+        )
+      );
+      
+      console.log('Members to add:', membersToAdd);
+      console.log('Members to remove:', membersToRemove);
+      console.log('Members to update:', membersToUpdate);
+      
+      // Add new members
+      for (const member of membersToAdd) {
+        if (member.user_id) {
+          await addTeamMember(data.team_id, {
+            user_id: member.user_id,
+            role: member.role
+          });
+        }
+      }
+      
+      // Remove members
+      for (const member of membersToRemove) {
+        if (member.user_id) {
+          await deleteTeamMember(data.team_id, member.user_id);
+        }
+      }
+      
+      // Update members (remove and add again with new role)
+      for (const member of membersToUpdate) {
+        if (member.user_id) {
+          await deleteTeamMember(data.team_id, member.user_id);
+          await addTeamMember(data.team_id, {
+            user_id: member.user_id,
+            role: member.role
+          });
+        }
+      }
   
       // Refetch all teams
-      const teamsResponse = await fetch('/api/teams/list');
-      if (!teamsResponse.ok) {
-        throw new Error('Failed to fetch updated teams list');
-      }
-      const updatedTeams = await teamsResponse.json();
-      setTeams(Array.isArray(updatedTeams) ? updatedTeams : []);
+      await fetchTeams();
   
       setShowCreateForm(false);
       setEditTeam(null);
@@ -125,6 +261,8 @@ export default function TeamsPage() {
         method: 'POST',  // Changed from 'DELETE' to 'POST'
         headers: {
           'Content-Type': 'application/json',
+          'X-API-Base-URL': apiBaseUrl,
+          'X-API-Key': apiKey
         },
         body: JSON.stringify({ team_ids: [teamId] }),  // Changed from team_id to team_ids
       });
@@ -144,8 +282,9 @@ export default function TeamsPage() {
   };
 
   const handleStartEdit = (team: Team) => {
-    console.log('Starting edit for team:', team);
-    const formData: TeamFormData = {
+    console.log('Starting edit for team:', JSON.stringify(team, null, 2));
+    const formData: TeamFormData & { team_id: string } = {
+      team_id: team.team_id, // Include team_id for the form
       team_alias: team.team_alias,
       max_budget: team.max_budget,
       budget_duration: team.budget_duration,
@@ -192,7 +331,7 @@ export default function TeamsPage() {
         <TeamForm 
           onClose={handleCloseForm}
           onSubmit={editTeam ? handleEditTeam : handleCreateTeam}
-          initialData={editTeam || undefined}
+          initialData={editTeam ? editTeam : undefined}
           isEdit={!!editTeam}
         />
       )}

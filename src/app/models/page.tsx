@@ -1,21 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Model } from '@/types/models';
 import { ModelList } from './components/ModelList';
+import { useConfig } from '@/lib/config-context';
 
 export default function ModelsPage() {
+  const { apiBaseUrl, apiKey, isConfigured } = useConfig();
   const [models, setModels] = useState<Model[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchModels();
-  }, []);
-
-  const fetchModels = async () => {
+  const fetchModels = useCallback(async () => {
     try {
-      const response = await fetch('/api/models/list');
+      const response = await fetch('/api/models/list', {
+        headers: {
+          'X-API-Base-URL': apiBaseUrl,
+          'X-API-Key': apiKey
+        }
+      });
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -33,7 +36,11 @@ export default function ModelsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiBaseUrl, apiKey]);
+
+  useEffect(() => {
+    fetchModels();
+  }, [fetchModels]);
 
   return (
     <div className="container mx-auto p-4">

@@ -1,0 +1,15 @@
+// Middleware temporarily disabled to allow Tauri static export
+// The original middleware functionality will need to be implemented client-side
+
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+
+export function middleware(request: NextRequest) {
+  // Just pass through all requests
+  return NextResponse.next();
+}
+
+// Limiting the matcher to a path that won't be used
+export const config = {
+  matcher: ['/disabled-middleware'],
+};

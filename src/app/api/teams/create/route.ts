@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { getHeaders, getApiUrl } from '@/lib/config';
 import { isValidDuration } from '@/lib/validators';
 
 // Define the interface for the request body
@@ -30,10 +29,30 @@ interface APIErrorResponse {
 
 export async function POST(request: Request) {
   try {
-    const headers = getHeaders();
-    if (!headers.Authorization) {
+    // Get configuration from headers
+    const apiBaseUrl = request.headers.get('X-API-Base-URL');
+    const apiKey = request.headers.get('X-API-Key');
+    
+    console.log('API configuration from headers:', {
+      baseUrl: apiBaseUrl,
+      keyExists: !!apiKey
+    });
+    
+    // Verify we have the API key
+    if (!apiKey) {
       throw new Error('API key not configured');
     }
+    
+    if (!apiBaseUrl) {
+      throw new Error('API base URL not configured');
+    }
+    
+    // Create headers for external API
+    const headers = {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
 
     const teamData: TeamCreateRequest = await request.json();
     
@@ -57,7 +76,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const url = getApiUrl('/team/new');
+    // Build URL
+    const baseUrl = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
+    const url = `${baseUrl}/team/new`;
 
 
     // Add handling for litellm-changed-by header
@@ -66,9 +87,12 @@ export async function POST(request: Request) {
       Object.assign(headers, { 'litellm-changed-by': litellmChangedBy });    
     }
 
-    console.log('Team data:', teamData);
+    console.log('Team data being sent to API:', JSON.stringify(teamData, null, 2));
     console.log('API URL:', url);
-    console.log('Headers:', headers);
+    console.log('Headers:', {
+      ...headers,
+      Authorization: 'Bearer [REDACTED]'
+    });
 
     const response = await fetch(url, {
       method: 'POST',
@@ -80,6 +104,19 @@ export async function POST(request: Request) {
     });
 
     console.log('Response status:', response.status);
+    
+    // Log the full response for debugging
+    const responseText = await response.text();
+    console.log('Response text:', responseText);
+    
+    let createdTeam;
+    try {
+      createdTeam = JSON.parse(responseText);
+      console.log('Created team:', JSON.stringify(createdTeam, null, 2));
+    } catch (e) {
+      console.error('Failed to parse response:', e);
+      throw new Error('Invalid JSON response from server');
+    }
 
     if (!response.ok) {
       const errorResponse: APIErrorResponse = await response.json();
@@ -105,7 +142,6 @@ export async function POST(request: Request) {
       return NextResponse.json(errorResponse, { status: parseInt(errorResponse.error.code) });
     }
 
-    const createdTeam = await response.json();
     return NextResponse.json(createdTeam);
   } catch (error) {
     console.error('Error in teams create API route:', error);

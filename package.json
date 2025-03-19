@@ -6,7 +6,9 @@
     "dev": "next dev -p 8765",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "tauri": "tauri",
+    "desktop": "tauri dev"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.6",
@@ -14,9 +16,10 @@
     "@radix-ui/react-label": "^2.1.2",
     "@radix-ui/react-slot": "^1.1.2",
     "@radix-ui/react-tooltip": "^1.1.8",
+    "@tauri-apps/api": "^2.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "cookies-next": "^5.1.0",
+    "cookies-next": "^4.1.1",
     "dotenv": "^16.4.7",
     "lucide-react": "^0.477.0",
     "next": "^14.1.0",
@@ -29,6 +32,7 @@
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.10",
+    "@tauri-apps/cli": "^2.0.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

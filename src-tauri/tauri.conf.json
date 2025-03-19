@@ -1,0 +1,54 @@
+{
+  "$schema": "https://beta.tauri.app/schema.json",
+  "identifier": "com.julwrites.ai-gateway-portal",
+  "productName": "AI Gateway Portal",
+  "version": "0.1.0",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../.next",
+    "devUrl": "http://localhost:8765"
+  },
+  "app": {
+    "windows": [
+      {
+        "fullscreen": false,
+        "height": 800,
+        "width": 1280,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "title": "AI Gateway Portal"
+      }
+    ],
+    "security": {
+      "csp": null
+    },
+    "withGlobalTauri": true
+  },
+  "bundle": {
+    "active": true,
+    "category": "DeveloperTool",
+    "copyright": "",
+    "macOS": {
+      "entitlements": null,
+      "exceptionDomain": "",
+      "frameworks": [],
+      "providerShortName": null,
+      "signingIdentity": null
+    },
+    "resources": [],
+    "shortDescription": "",
+    "targets": ["app"],
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    }
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    }
+  }
+}

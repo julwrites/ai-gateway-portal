@@ -5,8 +5,10 @@ import { UserRequest, UserResponse } from '@/types/users';
 import { UserList } from './components/UserList';
 import { UserForm } from './components/UserForm';
 import { isValidDuration } from '@/lib/validators';
+import { useConfig } from '@/lib/config-context';
 
 export default function UsersPage() {
+  const { apiBaseUrl, apiKey, isConfigured } = useConfig();
   const [showUserForm, setShowUserForm] = useState(false);
   const [users, setUsers] = useState<UserResponse[]>([]);
   const [editingUser, setEditingUser] = useState<UserResponse | null>(null);
@@ -15,12 +17,17 @@ export default function UsersPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [apiBaseUrl, apiKey]);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/users/list');
+      const response = await fetch('/api/users/list', {
+        headers: {
+          'X-API-Base-URL': apiBaseUrl,
+          'X-API-Key': apiKey
+        }
+      });
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -37,7 +44,7 @@ export default function UsersPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [apiBaseUrl, apiKey]);
 
   const handleCreateUser = async (data: UserRequest) => {
     try {
@@ -45,6 +52,8 @@ export default function UsersPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-API-Base-URL': apiBaseUrl,
+          'X-API-Key': apiKey
         },
         body: JSON.stringify(data),
       });
@@ -75,6 +84,8 @@ export default function UsersPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-API-Base-URL': apiBaseUrl,
+          'X-API-Key': apiKey
         },
         body: JSON.stringify(user),
       });
@@ -102,6 +113,8 @@ export default function UsersPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-API-Base-URL': apiBaseUrl,
+          'X-API-Key': apiKey
         },
         body: JSON.stringify({ user_ids: [userId] }), // Change this line
       });

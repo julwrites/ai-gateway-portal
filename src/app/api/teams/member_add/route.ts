@@ -1,9 +1,7 @@
-// src/app/api/users/delete/route.ts
-
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
-  console.log('\n=== Deleting User ===');
+  console.log('\n=== Adding Team Member ===');
   
   try {
     // Get configuration from headers
@@ -31,45 +29,58 @@ export async function POST(request: Request) {
       'Accept': 'application/json',
     };
 
-    const userData = await request.json();
+    // Get request body
+    const requestData = await request.json();
+    console.log('Received request data:', JSON.stringify(requestData, null, 2));
     
-    // Ensure user_ids is always an array
-    const user_ids = Array.isArray(userData.user_ids) ? userData.user_ids : [userData.user_ids];
-
-    const litellmBody = { user_ids };
-
+    // Check if team_id and member exist
+    if (!requestData.team_id) {
+      console.error('Missing team_id in request body');
+      return NextResponse.json({ error: 'Missing team_id in request body' }, { status: 400 });
+    }
+    
+    if (!requestData.member) {
+      console.error('Missing member in request body');
+      return NextResponse.json({ error: 'Missing member in request body' }, { status: 400 });
+    }
+    
     // Build URL
     const baseUrl = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
-    const url = `${baseUrl}/user/delete`;
+    const url = `${baseUrl}/team/member_add`;
 
+    // Log request details (excluding sensitive data)
     console.log('Request Details:');
     console.log('URL:', url);
     console.log('Headers:', {
       ...headers,
       Authorization: 'Bearer [REDACTED]'
     });
-    console.log('Body:', litellmBody);
+    console.log('Body being sent to API:', JSON.stringify(requestData, null, 2));
 
+    // Make the request
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         ...headers,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(litellmBody),
+      body: JSON.stringify(requestData),
     });
 
+    // Log response details
     console.log('\nResponse Details:');
     console.log('Status:', response.status);
     console.log('Headers:', response.headers);
 
     const responseText = await response.text();
+    console.log('\nResponse text:', responseText);
     
     if (!response.ok) {
       console.error('Error Response:', responseText);
-      throw new Error(`Failed to delete user: ${responseText}`);
+      throw new Error(`Failed to add team member: ${responseText}`);
     }
 
+    // Parse and validate response
     let data;
     try {
       data = JSON.parse(responseText);
@@ -79,13 +90,13 @@ export async function POST(request: Request) {
       throw new Error('Invalid JSON response from server');
     }
 
-    console.log('=== User Deleted Successfully ===\n');
+    console.log('=== Team Member Added Successfully ===\n');
     return NextResponse.json(data);
   } catch (error) {
-    console.error('\nError in user delete route:', error);
+    console.error('\nError in team member add route:', error);
     return NextResponse.json(
       { 
-        error: 'Failed to delete user',
+        error: 'Failed to add team member',
         details: error instanceof Error ? error.message : String(error)
       },
       { status: 500 }

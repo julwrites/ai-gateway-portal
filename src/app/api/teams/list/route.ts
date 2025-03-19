@@ -1,19 +1,45 @@
 import { NextResponse } from 'next/server';
 import { Team } from '@/types/teams';
-import { getHeaders, getApiUrl } from '@/lib/config';
 
 export const revalidate = 60; // Adjust as needed
 
 export async function GET(request: Request) {
+  // Get the referer to see where the request is coming from
+  const referer = request.headers.get('referer');
   console.log('\n=== Fetching Teams ===');
+  console.log('Request from:', referer || 'unknown');
   
   try {
-    const headers = getHeaders();
-    if (!headers.Authorization) {
-      throw new Error('API key not configured');
+    // Get configuration from headers
+    const apiBaseUrl = request.headers.get('X-API-Base-URL');
+    const apiKey = request.headers.get('X-API-Key');
+    
+    console.log('API configuration from headers:', {
+      baseUrl: apiBaseUrl,
+      keyExists: !!apiKey
+    });
+    
+    // Verify we have the API key
+    if (!apiKey) {
+      console.log('API key not configured, returning empty array');
+      return NextResponse.json([]);
     }
+    
+    if (!apiBaseUrl) {
+      console.log('API base URL not configured, returning empty array');
+      return NextResponse.json([]);
+    }
+    
+    // Create headers for external API
+    const headers = {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
 
-    const url = getApiUrl('/team/list');
+    // Build URL
+    const baseUrl = apiBaseUrl.endsWith('/') ? apiBaseUrl.slice(0, -1) : apiBaseUrl;
+    const url = `${baseUrl}/team/list`;
 
     console.log('Request Details:');
     console.log('URL:', url);
